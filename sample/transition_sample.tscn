@@ -1,14 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://di0hxh74j4qhe"]
+[gd_scene format=3 uid="uid://di0hxh74j4qhe"]
 
 [ext_resource type="Shader" uid="uid://dm7gh1epg25rd" path="res://addons/konado/shader/bg_trans_effects/cyber_glitch_effect.gdshader" id="1_4x34o"]
-[ext_resource type="Texture2D" uid="uid://bkrpa0r41e1n7" path="res://assets/banner/2.0/konado-2.0-banner.png" id="2_40i07"]
-[ext_resource type="Texture2D" uid="uid://bb7nhjioefh8a" path="res://sample/demo/sample_arts/示例-咖啡馆-背景.png" id="2_wxeb4"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_40i07"]
 shader = ExtResource("1_4x34o")
 shader_parameter/progress = 1.0
-shader_parameter/current_texture = ExtResource("2_wxeb4")
-shader_parameter/target_texture = ExtResource("2_40i07")
 shader_parameter/glitch_intensity = 0.05
 shader_parameter/rgb_split_amount = 0.01999999955297
 shader_parameter/scanline_freq = 80.0
@@ -18,7 +14,7 @@ shader_parameter/noise_strength = 0.05
 
 [sub_resource type="CanvasTexture" id="CanvasTexture_40i07"]
 
-[node name="TransitionSample" type="Control"]
+[node name="TransitionSample" type="Control" unique_id=1724626822]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +22,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TextureRect" type="TextureRect" parent="."]
+[node name="TextureRect" type="TextureRect" parent="." unique_id=449756785]
 material = SubResource("ShaderMaterial_40i07")
 layout_mode = 1
 anchors_preset = 15

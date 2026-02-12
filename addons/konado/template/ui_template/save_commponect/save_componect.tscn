@@ -1,7 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://b5njwitmejk76"]
+[gd_scene format=3 uid="uid://b5njwitmejk76"]
 
 [ext_resource type="Script" uid="uid://cqjotblvlkg3y" path="res://addons/konado/template/ui_template/save_commponect/save_componect.gd" id="1_4ot8c"]
-[ext_resource type="Texture2D" uid="uid://cxe2kpfeicnd" path="res://assets/banner/2.1/konado-2.1-banner.png" id="2_ip0xe"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kt3kp"]
 bg_color = Color(0.915066, 0.431991, 0.379989, 1)
@@ -10,14 +9,14 @@ corner_radius_top_left = 35
 [sub_resource type="LabelSettings" id="LabelSettings_kt3kp"]
 font_size = 35
 
-[node name="SaveComponent" type="Button"]
+[node name="SaveComponent" type="Button" unique_id=679572247]
 clip_contents = true
 custom_minimum_size = Vector2(860, 200)
 offset_right = 901.0
 offset_bottom = 200.0
 script = ExtResource("1_4ot8c")
 
-[node name="Panel" type="Panel" parent="."]
+[node name="Panel" type="Panel" parent="." unique_id=1532068967]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +25,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="autosave_sign" type="Label" parent="."]
+[node name="autosave_sign" type="Label" parent="." unique_id=314999880]
 visible = false
 layout_mode = 1
 anchors_preset = 3
@@ -43,7 +42,7 @@ text = "自动保存"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="name_label" type="Label" parent="."]
+[node name="name_label" type="Label" parent="." unique_id=1843676633]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
@@ -58,7 +57,7 @@ text = "存档"
 label_settings = SubResource("LabelSettings_kt3kp")
 vertical_alignment = 1
 
-[node name="save_time_label" type="Label" parent="."]
+[node name="save_time_label" type="Label" parent="." unique_id=338405141]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
@@ -72,7 +71,7 @@ grow_vertical = 0
 text = "2025/8/25/12:02"
 vertical_alignment = 1
 
-[node name="game_time_label" type="Label" parent="."]
+[node name="game_time_label" type="Label" parent="." unique_id=327121920]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
@@ -86,7 +85,7 @@ grow_vertical = 0
 text = " 3h 2min"
 vertical_alignment = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=2016915375]
 custom_minimum_size = Vector2(124, 0)
 layout_mode = 0
 offset_left = 732.0
@@ -95,27 +94,26 @@ offset_right = 856.0
 offset_bottom = 174.0
 alignment = 1
 
-[node name="DeleteSaveButton" type="Button" parent="VBoxContainer"]
+[node name="DeleteSaveButton" type="Button" parent="VBoxContainer" unique_id=190728216]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "删除存档"
 
-[node name="LoadSaveButton" type="Button" parent="VBoxContainer"]
+[node name="LoadSaveButton" type="Button" parent="VBoxContainer" unique_id=696484377]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "读取存档"
 
-[node name="SaveProgress" type="Button" parent="VBoxContainer"]
+[node name="SaveProgress" type="Button" parent="VBoxContainer" unique_id=657211528]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "保存进度"
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=1466512908]
 custom_minimum_size = Vector2(200, 200)
 layout_mode = 1
 offset_right = 369.0
 offset_bottom = 200.0
 mouse_filter = 2
-texture = ExtResource("2_ip0xe")
 expand_mode = 1
 stretch_mode = 6

@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://dcwk5so2ohcc2"]
 
 [ext_resource type="Script" uid="uid://mksyuojdc6ns" path="res://addons/konado/template/character/konado_actor.gd" id="1_gnto7"]
-[ext_resource type="Texture2D" uid="uid://c70k2vfccg61u" path="res://assets/kona/可娜立绘1.png" id="2_jujah"]
 
 [node name="character" type="Control" unique_id=1241920877 node_paths=PackedStringArray("texture_rect")]
 layout_mode = 3
@@ -25,7 +24,6 @@ grow_horizontal = 2
 grow_vertical = 2
 scale = Vector2(0.795, 0.795)
 pivot_offset = Vector2(960, 1080)
-texture = ExtResource("2_jujah")
 expand_mode = 1
 stretch_mode = 5
 
