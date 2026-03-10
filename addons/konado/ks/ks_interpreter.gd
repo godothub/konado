@@ -3,6 +3,16 @@ class_name KonadoScriptsInterpreter
 
 ## Konado脚本解释器
 
+# ========== 新增：变量相关配置 ==========
+## 全局变量存储（key: 变量名, value: 变量值）
+var global_variables: Dictionary = {}
+## 条件判断正则（匹配 if %变量 == 值 格式）
+var condition_regex: RegEx
+## 变量定义正则（匹配 global 变量名 = 值 格式）
+var var_def_regex: RegEx
+## 变量引用正则（匹配 %变量名 格式）
+var var_ref_regex: RegEx
+
 ## 源文件脚本路径
 var tmp_path = ""
 ## 源文件脚本行，显示在编辑器中
@@ -44,6 +54,17 @@ func _init() -> void:
 	shot_id_metedata_regex = RegEx.new()
 	shot_id_metedata_regex.compile("^(shot_id)\\s+(\\S+)")
 	
+	# ========== 修复：条件判断正则（匹配带/不带冒号的条件行） ==========
+	# 匹配 global 变量名 = 值（支持数字/字符串）
+	var_def_regex = RegEx.new()
+	var_def_regex.compile("^global\\s+(\\w+)\\s*=\\s*(\\d+|\"[^\"]*\")$")
+	# 匹配 if %变量名 == 值（支持数字），结尾冒号可选（:?）
+	condition_regex = RegEx.new()
+	condition_regex.compile("^if\\s+%(\\w+)\\s*==\\s*(\\d+):?$")
+	# 匹配 %变量名 格式的变量引用
+	var_ref_regex = RegEx.new()
+	var_ref_regex.compile("%(\\w+)")
+
 ## 全文解析模式
 func process_scripts_to_data(path: String) -> KND_Shot:
 	if not FileAccess.file_exists(path):
@@ -66,13 +87,16 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 	cur_tmp_actors = []
 	# 清空角色依赖记录
 	dep_characters.clear()
+	# ========== 新增：解析前清空全局变量 ==========
+	global_variables.clear()
 
 	# 只保留内容行
 	var content_lines = raw_script_lines.slice(1)
 	tmp_content_lines = content_lines
 
-	# 解析内容行
-	for i in content_lines.size():
+	# 解析内容行（改用索引递增方式，支持条件分支的多行解析）
+	var i = 0
+	while i < content_lines.size():
 		tmp_line_number = i
 		var original_line = content_lines[i]  # 保留原始行（未strip）
 		var line = original_line.strip_edges()  # 处理后的行，用于内容解析
@@ -81,11 +105,39 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 
 		# 空行或注释行跳过
 		if line.is_empty():
+			i += 1
 			continue
 		if line.begins_with("#") or line.begins_with("##"):
+			i += 1
 			continue
 
 		print("第%d行内容：" % original_line_number, line)
+
+		# ========== 新增：跳过endif行（避免被当作普通行解析） ==========
+		if line == "endif":
+			i += 1
+			continue
+
+		# ========== 新增：优先解析变量定义 ==========
+		if line.begins_with("global"):
+			if _parse_variable_def(line, original_line_number):
+				i += 1
+				continue
+			else:
+				_scripts_debug(path, original_line_number, "变量定义解析失败：%s" % line)
+				return null
+		
+		# ========== 新增：解析条件判断（if/else/endif） ==========
+		if line.begins_with("if "):
+			var condition_dialogs = _parse_condition(line, i, original_line_number, path, shot)
+			if condition_dialogs.is_empty():
+				return null
+			# 将条件分支内的对话添加到shot
+			#for d in condition_dialogs:
+				#shot.dialogues.append(d)
+			# 跳过已解析的条件分支行（包括if/else/endif）
+			i = tmp_line_number + 1
+			continue
 
 		# 解析普通行（已删除choice缩进处理逻辑）
 		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)
@@ -98,6 +150,8 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 		else:
 			_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，终止解析: %s" % line)
 			return null
+		
+		i += 1
 			
 	_scripts_info(path, 0, "文件：%s 章节ID：%s 对话数量：%d" % 
 		[path, shot.shot_id, shot.dialogues.size()])
@@ -119,6 +173,12 @@ func parse_single_line(line: String, line_number: int, path: String) -> KND_Dial
 func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot) -> KND_Dialogue:
 	var dialog := KND_Dialogue.new()
 	dialog.source_file_line = line_number
+	
+	# ========== 新增：解析对话时替换变量引用 ==========
+	# 修复：先判断是否有变量引用再替换，避免无意义调用
+	if line.find("%") != -1:
+		line = _replace_variable_ref(line)
+	
 	if _parse_dialog(line, dialog):
 		print("解析成功：对话相关\n")
 		return dialog
@@ -146,6 +206,205 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 
 	dialog = null
 	return null
+
+# ========== 新增：变量定义解析 ==========
+func _parse_variable_def(line: String, line_number: int) -> bool:
+	var result = var_def_regex.search(line)
+	if not result:
+		_scripts_debug(tmp_path, line_number, "变量定义格式错误：%s（正确格式：global 变量名 = 数字/\"字符串\"）" % line)
+		return false
+	
+	var var_name = result.get_string(1)
+	var var_value_str = result.get_string(2)
+	var var_value = null
+	
+	# 解析值类型（数字/字符串）
+	if var_value_str.begins_with("\"") and var_value_str.ends_with("\""):
+		var_value = var_value_str.substr(1, var_value_str.length() - 2)  # 去掉引号
+	else:
+		var_value = var_value_str.to_int()
+	
+	# 存储全局变量
+	global_variables[var_name] = var_value
+	_scripts_info(tmp_path, line_number, "全局变量定义成功：%s = %s" % [var_name, var_value])
+	return true
+
+# ========== 修复：变量引用替换（将%变量名替换为实际值） ==========
+func _replace_variable_ref(line: String) -> String:
+	var new_line = line
+	var matches = var_ref_regex.search_all(new_line)
+	
+	# 倒序替换（避免替换后索引偏移）
+	var match_list = []
+	for m in matches:
+		match_list.append(m)
+	
+	# 修复：将错误的invert()改为reverse()（Godot Array正确的反转方法）
+	match_list.reverse()
+	
+	for m in match_list:
+		var var_name = m.get_string(1)
+		if global_variables.has(var_name):
+			var var_value = str(global_variables[var_name])
+			new_line = new_line.substr(0, m.get_start()) + var_value + new_line.substr(m.get_end())
+		else:
+			_scripts_debug(tmp_path, tmp_original_line_number, "引用未定义的变量：%s" % var_name)
+			return line
+	
+	return new_line
+
+# ========== 重构：条件判断（if/else/endif）解析 ==========
+func _parse_condition(line: String, start_index: int, line_number: int, path: String, shot: KND_Shot) -> Array[KND_Dialogue]:
+	var result_dialogs: Array[KND_Dialogue] = []
+	var current_index = start_index + 1  # 跳过if行，开始解析内容
+	var original_line_num = line_number
+	var condition_result: bool = false  
+	var has_else = false
+	var else_index = -1
+	
+	# 1. 解析if条件表达式
+	var cond_match = condition_regex.search(line)
+	if not cond_match:
+		# ========== 修复：转义格式化字符串中的%为%% ==========
+		_scripts_debug(path, original_line_num, "条件判断格式错误：%s（正确格式：if %%变量名 == 数字）" % line)
+		return []
+	
+	var var_name = cond_match.get_string(1)
+	var target_value = cond_match.get_string(2).to_int()
+	
+	# 检查变量是否存在并判断条件
+	if global_variables.has(var_name):
+		var actual_value = global_variables[var_name]
+		if typeof(actual_value) == TYPE_INT and actual_value == target_value:
+			condition_result = true
+	else:
+		# ========== 修复：转义格式化字符串中的%为%% ==========
+		_scripts_debug(path, original_line_num, "条件判断引用未定义的变量：%s（当前行：%s）" % [var_name, line])
+		return []
+	
+	# 2. 解析if块内容（直到else或endif）
+	var if_block_lines = []
+	var if_block_line_nums = []
+	while current_index < tmp_content_lines.size():
+		var original_line = tmp_content_lines[current_index]
+		var current_line = original_line.strip_edges()
+		var current_line_num = original_line_num + (current_index - start_index)
+		
+		# 遇到else，记录位置并终止if块解析
+		if current_line == "else:":
+			has_else = true
+			else_index = current_index
+			break
+		
+		# 遇到endif，终止if块解析
+		if current_line == "endif":
+			break
+		
+		# 空行/注释行跳过（但计入行号）
+		if current_line.is_empty() or current_line.begins_with("#"):
+			current_index += 1
+			continue
+		
+		# 添加到if块内容
+		if_block_lines.append(current_line)
+		if_block_line_nums.append(current_line_num)
+		current_index += 1
+	
+	# 3. 解析if块内容（条件成立时生效）
+	if condition_result:
+		for idx in range(if_block_lines.size()):
+			var block_line = if_block_lines[idx]
+			var block_line_num = if_block_line_nums[idx]
+			var dialog = parse_line(block_line, block_line_num, path, shot)
+			if dialog:
+				result_dialogs.append(dialog)
+			else:
+				_scripts_debug(path, block_line_num, "if块内解析失败：%s" % block_line)
+				return []
+	
+	# 4. 解析else块内容（条件不成立时生效）
+	if has_else and else_index > 0:
+		var else_block_index = else_index + 1
+		var else_block_lines = []
+		var else_block_line_nums = []
+		
+		# 解析else块内容（直到endif）
+		while else_block_index < tmp_content_lines.size():
+			var original_line = tmp_content_lines[else_block_index]
+			var current_line = original_line.strip_edges()
+			var current_line_num = original_line_num + (else_block_index - start_index)
+			
+			# 遇到endif，终止else块解析
+			if current_line == "endif":
+				break
+			
+			# 空行/注释行跳过
+			if current_line.is_empty() or current_line.begins_with("#"):
+				else_block_index += 1
+				continue
+			
+			# 添加到else块内容
+			else_block_lines.append(current_line)
+			else_block_line_nums.append(current_line_num)
+			else_block_index += 1
+		
+		# 条件不成立时解析else块
+		if not condition_result:
+			for idx in range(else_block_lines.size()):
+				var block_line = else_block_lines[idx]
+				var block_line_num = else_block_line_nums[idx]
+				var dialog = parse_line(block_line, block_line_num, path, shot)
+				if dialog:
+					result_dialogs.append(dialog)
+				else:
+					_scripts_debug(path, block_line_num, "else块内解析失败：%s" % block_line)
+					return []
+		
+		# 更新current_index到endif位置
+		current_index = else_block_index
+	
+	# 5. 验证是否有endif结尾
+	if current_index >= tmp_content_lines.size() or tmp_content_lines[current_index].strip_edges() != "endif":
+		_scripts_debug(path, original_line_num, "条件判断缺少endif结尾（当前行：%s）" % line)
+		return []
+	
+	# 更新全局索引到endif的下一行
+	tmp_line_number = current_index
+	
+	_scripts_info(path, line_number, "条件判断解析完成：%s，匹配结果：%s，解析出%d条对话" % 
+		[line, condition_result, result_dialogs.size()])
+	return result_dialogs
+
+# ========== 保留：解析缩进块内容（用于branch） ==========
+func _parse_indented_block(start_index: int, start_line_num: int) -> Array[Dictionary]:
+	var block_lines: Array[Dictionary] = []
+	var current_index = start_index
+	
+	while current_index < tmp_content_lines.size():
+		var original_line = tmp_content_lines[current_index]
+		var line_stripped = original_line.strip_edges()
+		var line_num = start_line_num + (current_index - start_index)
+		
+		# 空行跳过
+		if line_stripped.is_empty():
+			current_index += 1
+			continue
+		
+		# 检查缩进（4个空格或制表符）
+		if not (original_line.begins_with("    ") or original_line.begins_with("\t")):
+			break
+		
+		# 添加到块内容（去掉缩进）
+		block_lines.append({
+			"line": line_stripped,
+			"line_number": line_num
+		})
+		
+		current_index += 1
+	
+	# 更新全局索引到块结束位置
+	tmp_line_number = current_index
+	return block_lines
 
 # 背景切换解析
 func _parse_background(line: String, dialog: KND_Dialogue) -> bool:
@@ -179,8 +438,11 @@ func _parse_actor(line: String, dialog: KND_Dialogue) -> bool:
 			dialog.dialog_type = KND_Dialogue.Type.DISPLAY_ACTOR
 			dialog.character_name = parts[2]
 			dialog.character_state = parts[3]
-			dialog.actor_position = Vector2(parts[5].to_float(), parts[6].to_float())
-			dialog.actor_scale = parts[8].to_float()
+			# 修复：增加数组长度检查，避免索引越界
+			if parts.size() >= 6 and parts[4] == "at":
+				dialog.actor_position = Vector2(parts[5].to_float(), parts[6].to_float())
+			if parts.size() >= 9 and parts[7] == "scale":
+				dialog.actor_scale = parts[8].to_float()
 			if parts.size() == 10:
 				if parts[9] == "mirror":
 					dialog.actor_mirror = true
@@ -214,8 +476,9 @@ func _parse_actor(line: String, dialog: KND_Dialogue) -> bool:
 			
 			if not cur_tmp_actors.has(parts[2]):
 				_scripts_debug(tmp_path, tmp_original_line_number, "无法移动不存在的角色的位置，请检查角色名称是否正确")
-
-			dialog.target_move_pos = Vector2(parts[3].to_float(), parts[4].to_float())
+			# 修复：增加数组长度检查，避免索引越界
+			if parts.size() >= 5:
+				dialog.target_move_pos = Vector2(parts[3].to_float(), parts[4].to_float())
 	
 	return true
 
@@ -226,13 +489,19 @@ func _parse_audio(line: String, dialog: KND_Dialogue) -> bool:
 	
 	var parts = line.split(" ", false)
 	if parts[0] == "play":
+		if parts.size() < 3:
+			return false
 		if parts[1] == "bgm":
 			dialog.dialog_type = KND_Dialogue.Type.PLAY_BGM 
+			dialog.bgm_name = parts[2]
 		elif parts[1] == "sfx":
 			dialog.dialog_type = KND_Dialogue.Type.PLAY_SOUND_EFFECT
-		dialog["bgm_name" if parts[1] == "bgm" else "soundeffect_name"] = parts[2]
+			dialog.soundeffect_name = parts[2]
 	elif parts[0] == "stop":
-		dialog.dialog_type = KND_Dialogue.Type.STOP_BGM
+		if parts.size() >= 2 and parts[1] == "bgm":
+			dialog.dialog_type = KND_Dialogue.Type.STOP_BGM
+		else:
+			dialog.dialog_type = KND_Dialogue.Type.STOP_BGM
 	
 	return true
 
@@ -301,30 +570,19 @@ func _parse_branch(line: String, dialog: KND_Dialogue) -> bool:
 	dialog.dialog_type = KND_Dialogue.Type.BRANCH
 	dialog.branch_id = parts[1]
 
-	var tag_inner_line_number = tmp_line_number + 1
-	var expected_indent = "    "  # 预期的缩进（4个空格或制表符）
-
-	# 遍历标签内的行(缩进)
-	while tag_inner_line_number < tmp_content_lines.size():
-		var original_line = tmp_content_lines[tag_inner_line_number]
-		var inner_line = original_line.strip_edges()
-		
-		# 检查是否为空行或只有空白字符的行
-		if inner_line.is_empty():
-			tag_inner_line_number += 1
-			continue  # 跳过空行但继续处理后续内容
-		
-		# 检查缩进，允许4个空格或制表符
-		if not (original_line.begins_with("    ") or original_line.begins_with("\t")):
-			break  # 没有缩进，结束分支内容
-		
-		tag_inner_line_number += 1
+	# 改用通用的缩进块解析函数
+	var branch_block_lines = _parse_indented_block(tmp_line_number + 1, tmp_original_line_number + 1)
+	
+	# 解析branch内的内容
+	for block_line_info in branch_block_lines:
+		var inner_line = block_line_info.line
+		var inner_line_num = block_line_info.line_number
 		
 		if inner_line.begins_with("branch"):
-			_scripts_debug(tmp_path, tag_inner_line_number, "branch内不能嵌套branch")
+			_scripts_debug(tmp_path, inner_line_num, "branch内不能嵌套branch")
 			return false
 		
-		var inner_dialog = parse_line(inner_line, tag_inner_line_number, tmp_path, null)
+		var inner_dialog = parse_line(inner_line, inner_line_num, tmp_path, null)
 		if inner_dialog:
 			dialog.branch_dialogue.append(inner_dialog)
 
@@ -340,6 +598,8 @@ func _parse_jumpshot(line: String, dialog: KND_Dialogue) -> bool:
 		return false
 	
 	var parts = line.split(" ", false)
+	if parts.size() < 2:
+		return false
 	dialog.dialog_type = KND_Dialogue.Type.JUMP
 	dialog.jump_shot_path = parts[1]
 	return true
@@ -367,7 +627,7 @@ func _check_tag_and_choice() -> bool:
 		var jump_tags = cur_tmp_option_lines[line_num] as Array
 		for tag in jump_tags:
 			if not tmp_tags.has(tag):
-				_scripts_debug(tmp_path, line_num, "跳转标签 '" + tag + "' 不存在")
+				_scripts_debug(tmp_path, line_num, "跳转标签 '%s' 不存在（当前可选标签：%s）" % [tag, str(tmp_tags)])
 				return false
 	return true
 
