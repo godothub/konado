@@ -19,7 +19,7 @@ signal dialogue_line_start(line: int)
 ## 对话结束播放的信号
 signal dialogue_line_end(line: int)
 
-@export_group("Playback Settings")
+@export_category("Playback Settings")
 
 ## 是否在游戏开始时自动初始化对话，如果为true，则在游戏开始时自动初始化对话，否则需要手动初始化对话
 ## 手动初始化对话的方法为：在游戏开始时，调用`init_dialogue`方法
@@ -40,7 +40,12 @@ signal dialogue_line_end(line: int)
 ## 自动播放速度
 @export var autoplayspeed: float = 2
 
-@export_group("UI Settings")
+@export_category("Global Variable")
+
+## 对话全局变量
+@export var dialogue_variables: Dictionary[String, int]
+
+@export_category("UI Settings")
 
 ## 演员画布横向分块
 @export var horizontal_division: int = 6
@@ -84,7 +89,7 @@ var justenter: bool
 var cur_dialogue_type: KND_Dialogue.Type
 
 ## 资源列表
-@export_group("Dialogue Resources")
+@export_category("Dialogue Resources")
 ## 对话资源
 @export var start_dialogue_shot: KND_Shot = null
 ## 角色列表
@@ -98,7 +103,7 @@ var cur_dialogue_type: KND_Dialogue.Type
 ## 音效列表
 @export var soundeffect_list: KND_SoundEffectList
 
-@export_group("Log Tool")
+@export_category("Log Tool")
 ## 是否显示错误日志覆盖
 @export var enable_overlay_log: bool = true
 ## 报错提示面板
@@ -202,6 +207,12 @@ func set_bgm_list(bgm_list: KND_BgmList) -> void:
 		return
 	print(bgm_list.to_string())
 	self.bgm_list = bgm_list
+	
+## 获取对话变量
+func get_dialogue_variable(key: String) -> Dictionary:
+	if dialogue_variables.has(key):
+		return { "value": dialogue_variables[key] }
+	return {}
 
 ## 开始对话的方法
 func start_dialogue() -> void:
@@ -347,6 +358,33 @@ func _process(delta) -> void:
 					s.connect(_auto_process_next.bind(s))
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
+				# if else分支
+				elif cur_dialogue_type == KND_Dialogue.Type.IFELSE_BRANCH:
+					print("ifelse分支对话")
+					var target_value = dialog.target_value
+					var tmp_dialogues: Array[KND_Dialogue] = []
+					if get_dialogue_variable(dialog.varname).has("value"):
+						if target_value == get_dialogue_variable(dialog.varname).get("value"):
+							tmp_dialogues = dialog.if_result_dialogs
+						else:
+							tmp_dialogues = dialog.else_result_dialogs
+						if tmp_dialogues == null || tmp_dialogues.size() <= 0:
+							print("未满足条件或else无语句")
+							_dialogue_goto_state(DialogState.PAUSED)
+							_process_next()
+						else:
+							var insert_position = cur_index + 1
+							for i in range(tmp_dialogues.size()):
+								start_dialogue_shot.dialogues.insert(insert_position + i, tmp_dialogues[i])
+							await get_tree().process_frame
+							
+							print("添加了 %d 个ifelse对话" % tmp_dialogues.size())
+							print("当前对话总数: " + str(start_dialogue_shot.dialogues.size()))
+					else:
+						printerr("无法获取变量")
+					
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
 				# 如果是分支对话
 				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话[/color]")

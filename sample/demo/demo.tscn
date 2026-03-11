@@ -37,6 +37,10 @@ grow_vertical = 2
 
 [node name="KonadoDialogueManager" parent="." unique_id=1487339260 instance=ExtResource("1_57pxw")]
 layout_mode = 1
+dialogue_variables = Dictionary[String, int]({
+"": 0,
+"love": 1
+})
 start_dialogue_shot = ExtResource("2_grqbd")
 chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")

@@ -16,6 +16,7 @@ enum Type {
 	STOP_BGM,            # 停止播放BGM
 	PLAY_SOUND_EFFECT,   # 播放音效
 	SHOW_CHOICE,         # 显示选项
+	IFELSE_BRANCH,       # 条件分支
 	BRANCH,              # 分支
 	JUMP,                # 跳转
 	THE_END              # 剧终
@@ -25,12 +26,23 @@ enum Type {
 	set(v):
 		dialog_type = v
 		notify_property_list_changed()
+		
+## 值名称
+@export var varname: String
+
+## if else期待的目标值
+@export var target_value: int
 
 # 用于标记跳转点
 @export var branch_id: String
 
+@export var else_result_dialogs: Array[KND_Dialogue] = []
+
+@export var if_result_dialogs: Array[KND_Dialogue] = []
+
 # 对话内容
 @export var branch_dialogue: Array[KND_Dialogue] = []
+
 
 # 对话人物ID
 @export var character_id: String

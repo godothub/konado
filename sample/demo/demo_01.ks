@@ -17,11 +17,17 @@ actor change 可娜 害羞
 actor change 可娜 正常
 
 # 111
-background bg2 cyberglitch
+#background bg2 cyberglitch
 
-"角色ID" "对话内容"
+#global num_value += 1
+# 逻辑判断 %是获取变量
+if %love == 0:
+    "Kona" "今天想喝点什么？"
+#else:
+    "Kona" "又见面了朋友！"
+    "Kona" "又见面了！今天想喝点什么？"
+endif
 
-"Kona" "今天想喝点什么？"
 
 background bg1 windmill
 
