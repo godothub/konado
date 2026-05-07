@@ -45,8 +45,11 @@ signal custom_signal(content: String)
 
 @export_category("Global Variable")
 
-## 对话全局变量
-@export var dialogue_variables: Dictionary[String, int]
+## 对话全局变量存储（%前缀，持久化）
+@export var variable_store: KND_VariableStore
+
+## 对话临时变量存储（$前缀，仅脚本内有效，每次镜头重置）
+var _temp_variables: Dictionary = {}
 
 @export_category("UI Settings")
 
@@ -74,15 +77,15 @@ var option_triggered: bool = false
 ## 对话状态（0:关闭，1:播放，2:播放完成下一个）
 enum DialogState 
 {
-	OFF, 
-	PLAYING, 
-	PAUSED
+	OFF = 0, 
+	PLAYING = 1, 
+	PAUSED = 2
 }
 
 var dialogueState: DialogState
 
 ## 当前对话
-var cur_dialogue_shot:KND_Shot
+var cur_dialogue_shot: KND_Shot
 
 ## 当前对话节点ID
 var cur_node_id: String = ""
@@ -159,6 +162,10 @@ func _ready() -> void:
 	achievement_mgr = get_tree().root.get_node_or_null("KND_AchievementManager")
 	if achievement_mgr == null:
 		print("成就系统不可用")
+
+	if not variable_store:
+		variable_store = KND_VariableStore.new()
+		print("变量存储自动初始化")
 	
 
 	# 自动初始化和开始对话
@@ -207,6 +214,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 	justenter = true
 	dialogueState = DialogState.OFF
+	_temp_variables.clear()
 	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
 		cur_node_id = cur_dialogue_shot.start_node_id
 	elif cur_dialogue_shot.dialogues.size() > 0:
@@ -222,6 +230,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 ## 设置对话数据的方法
 func set_shot(new_shot: KND_Shot) -> void:
 	cur_dialogue_shot = new_shot.duplicate()
+	_temp_variables.clear()
 	if cur_dialogue_shot.start_node_id and not cur_dialogue_shot.start_node_id.is_empty():
 		cur_node_id = cur_dialogue_shot.start_node_id
 	elif cur_dialogue_shot.dialogues.size() > 0:
@@ -253,8 +262,8 @@ func set_bgm_list(bgm_list: KND_BgmList) -> void:
 	
 ## 获取对话变量
 func get_dialogue_variable(key: String) -> Dictionary:
-	if dialogue_variables.has(key):
-		return { "value": dialogue_variables[key] }
+	if variable_store and variable_store.has(key):
+		return { "value": variable_store.get_value(key) }
 	return {}
 
 ## 开始对话的方法
@@ -307,7 +316,7 @@ func _process(delta) -> void:
 					if (dialog.character_id != null):
 						chara_id = dialog.character_id
 					if (dialog.dialog_content != null):
-						content = dialog.dialog_content
+						content = _interpolate_variables(dialog.dialog_content)
 					if dialog.voice_id:
 						voice_id = dialog.voice_id
 		
@@ -389,7 +398,9 @@ func _process(delta) -> void:
 						get_tree().process_frame
 						_process_next()
 					else:
-						# 生成并显示选项
+						print_rich("[color=green]显示选项，共 %d 个选项[/color]" % dialog_choices.size())
+						for c in dialog_choices:
+							print_rich("[color=green]  \"%s\" -> %s[/color]" % [c.choice_text, c.next_id])
 						_konado_choice_interface.display_options(dialog_choices, self)
 						_acting_interface.show()
 						_konado_choice_interface.show()
@@ -413,25 +424,33 @@ func _process(delta) -> void:
 					_play_soundeffect(se_name)
 					_dialogue_goto_state(DialogState.PAUSED)
 					_process_next()
-				# if else分支
+				# if-else流程控制分支
 				elif cur_dialogue_type == KND_Dialogue.Type.IFELSE_BRANCH:
-					print("ifelse分支对话")
-					var target_value = dialog.target_value
+					print("ifelse流程控制分支")
 					var condition_met = false
-					var current_value = 0
-					if get_dialogue_variable(dialog.varname).has("value"):
-						current_value = get_dialogue_variable(dialog.varname).get("value")
+					var current_value: Variant = null
+
+					if dialog.is_persistent:
+						if variable_store and variable_store.has(dialog.varname):
+							current_value = variable_store.get_value(dialog.varname)
+					else:
+						if _temp_variables.has(dialog.varname):
+							current_value = _temp_variables[dialog.varname]
+
+					if current_value != null:
 						match dialog.condition_operator:
 							0:
-								condition_met = (current_value == target_value)
+								condition_met = (float(current_value) == float(dialog.target_value))
 							1:
-								condition_met = (current_value > target_value)
+								condition_met = (float(current_value) > float(dialog.target_value))
 							2:
-								condition_met = (current_value < target_value)
+								condition_met = (float(current_value) < float(dialog.target_value))
 							3:
-								condition_met = (current_value >= target_value)
+								condition_met = (float(current_value) >= float(dialog.target_value))
 							4:
-								condition_met = (current_value <= target_value)
+								condition_met = (float(current_value) <= float(dialog.target_value))
+							5:
+								condition_met = (float(current_value) != float(dialog.target_value))
 					else:
 						printerr("无法获取变量: " + dialog.varname)
 
@@ -450,7 +469,7 @@ func _process(delta) -> void:
 							_dialogue_goto_state(DialogState.PLAYING)
 						else:
 							_dialogue_goto_state(DialogState.OFF)
-				# 如果是分支对话（已弃用，直接跳到下一个节点）
+				# 如果是分支对话
 				elif cur_dialogue_type == KND_Dialogue.Type.BRANCH:
 					print_rich("[color=orange]分支对话（已弃用）[/color]")
 					if not dialog.next_id.is_empty():
@@ -467,6 +486,14 @@ func _process(delta) -> void:
 						_dialogue_goto_state(DialogState.OFF)
 						set_shot(res)
 						_dialogue_goto_state(DialogState.PLAYING)
+				# 如果是分支内跳转
+				elif cur_dialogue_type == KND_Dialogue.Type.JUMP_BRANCH:
+					if not dialog.next_id.is_empty():
+						cur_node_id = dialog.next_id
+						_dialogue_goto_state(DialogState.PLAYING)
+					else:
+						printerr("jump_branch 目标节点为空")
+						_dialogue_goto_state(DialogState.OFF)
 				# 信号触发
 				elif cur_dialogue_type == KND_Dialogue.Type.SIGNAL:
 					var content = dialog.custom_signal_name
@@ -495,6 +522,11 @@ func _process(delta) -> void:
 					_dialogue_goto_state(DialogState.PAUSED)
 					get_tree().process_frame
 					_process_next()
+				# 变量操作
+				elif cur_dialogue_type == KND_Dialogue.Type.SET_VARIABLE:
+					_handle_variable_operation(dialog)
+					_dialogue_goto_state(DialogState.PAUSED)
+					_process_next()
 				# 如果剧终
 				elif cur_dialogue_type == KND_Dialogue.Type.THE_END:
 					# 停止对话
@@ -519,6 +551,14 @@ func isfinishtyping(wait_voice: bool) -> void:
 		else:
 			await get_tree().create_timer(autoplayspeed).timeout
 		_process_next()
+		
+	# 检查下一句是否是选项，如果是自动下一句
+	var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
+	if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+		print("选项自动下一个")
+		await get_tree().create_timer(0.1).timeout
+		_process_next()
+		
 	print("触发打字完成信号")
 	
 ## 处理下一个，绑定到下一个按钮
@@ -539,7 +579,7 @@ func _process_next() -> void:
 			_audio_interface.stop_voice()
 			print("对话播放完成，开始播放下一个")
 			# 检查是否还有下一个节点
-			var cur := _current_dialogue()
+			var cur: KND_Dialogue = _current_dialogue()
 			if cur == null or cur.next_id.is_empty() or cur_dialogue_shot.find_node(cur.next_id) == null:
 				# 切换到对话关闭状态
 				_dialogue_goto_state(DialogState.OFF)
@@ -726,19 +766,98 @@ func _play_soundeffect(se_name: String) -> void:
 			break
 	_audio_interface.play_sound_effect(target_soundeffect)
 	pass
-	
+
+func _handle_variable_operation(dialog: KND_Dialogue) -> void:
+	var operand: Variant = dialog.variable_operand
+	if operand is String:
+		if (operand as String).is_valid_int():
+			operand = (operand as String).to_int()
+		elif (operand as String).is_valid_float():
+			operand = (operand as String).to_float()
+		elif (operand as String).to_lower() == "true":
+			operand = true
+		elif (operand as String).to_lower() == "false":
+			operand = false
+
+	if dialog.is_persistent:
+		if not variable_store:
+			printerr("持久变量存储未初始化")
+			return
+		variable_store.apply_operation(dialog.variable_name, dialog.variable_operation, operand)
+		print_rich("[color=cyan]持久变量操作: %%%s = %s[/color]" % [dialog.variable_name, str(variable_store.get_value(dialog.variable_name))])
+	else:
+		_apply_temp_operation(dialog.variable_name, dialog.variable_operation, operand)
+		print_rich("[color=magenta]临时变量操作: $%s = %s[/color]" % [dialog.variable_name, str(_temp_variables.get(dialog.variable_name))])
+
+func _apply_temp_operation(name: String, op: int, operand: Variant) -> void:
+	match op:
+		KND_VariableStore.Operation.SET:
+			_temp_variables[name] = operand
+		KND_VariableStore.Operation.ADD:
+			var current = _temp_variables.get(name, 0)
+			if typeof(current) == TYPE_STRING:
+				_temp_variables[name] = str(current) + str(operand)
+			else:
+				_temp_variables[name] = float(current) + float(operand)
+		KND_VariableStore.Operation.SUB:
+			_temp_variables[name] = float(_temp_variables.get(name, 0)) - float(operand)
+		KND_VariableStore.Operation.MUL:
+			_temp_variables[name] = float(_temp_variables.get(name, 0)) * float(operand)
+		KND_VariableStore.Operation.DIV:
+			var divisor = float(operand)
+			if divisor == 0.0:
+				push_error("临时变量 '$%s' 除法操作除数为零" % name)
+				return
+			_temp_variables[name] = float(_temp_variables.get(name, 0)) / divisor
+
+## 获取变量字符，比如好感度，角色名称等
+func _interpolate_variables(text: String) -> String:
+	if text.is_empty():
+		return text
+
+	var result = text
+	var regex = RegEx.new()
+	regex.compile("([%$])(\\w+)")
+
+	var matches = regex.search_all(text)
+	var offset = 0
+
+	for match in matches:
+		var prefix = match.get_string(1)
+		var var_name = match.get_string(2)
+		var value: Variant = null
+
+		if prefix == "%":
+			if variable_store and variable_store.has(var_name):
+				value = variable_store.get_value(var_name)
+		elif prefix == "$":
+			if _temp_variables.has(var_name):
+				value = _temp_variables[var_name]
+
+		if value != null:
+			var start = match.get_start() + offset
+			var end = match.get_end() + offset
+			var replacement = str(value)
+			result = result.substr(0, start) + replacement + result.substr(end)
+			offset += replacement.length() - match.get_string().length()
+
+	return result
+
 ## 选项触发方法
 func on_option_triggered(choice: KND_DialogueChoice) -> void:
 	_konado_choice_interface._choice_container.hide()
 	dialogue_line_end.emit(cur_node_id)
-	print("玩家选择按钮: " + str(choice.choice_text))
+	print_rich("[color=green]玩家选择: \"%s\" -> %s[/color]" % [choice.choice_text, choice.next_id])
 	if not choice.next_id.is_empty():
-		# 跳转到选项目标节点并开始播放
+		var target = cur_dialogue_shot.find_node(choice.next_id)
+		if target == null:
+			printerr("选项目标节点不存在: %s，停止对话" % choice.next_id)
+			_dialogue_goto_state(DialogState.OFF)
+			return
 		cur_node_id = choice.next_id
 		_dialogue_goto_state(DialogState.PLAYING)
 	else:
-		# 选项没有跳转目标，停止对话
-		print("选项没有跳转目标")
+		print_rich("[color=yellow]选项没有跳转目标，停止对话[/color]")
 		_dialogue_goto_state(DialogState.OFF)
 
 ## 保存游戏

@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://bj8ynu8013j4j" path="res://addons/konado/template/konado_dialogue.tscn" id="1_57pxw"]
 [ext_resource type="Script" uid="uid://ct7rfs05wpar0" path="res://sample/demo/demo.gd" id="1_sgljs"]
 [ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/new_resource.tres" id="3_c17kf"]
-[ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo_01.ks" id="3_sgljs"]
+[ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo_01.ks" id="4_dv03n"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/bg_list.tres" id="4_qcbmp"]
 [ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/bgm_list.tres" id="5_qcbmp"]
 [ext_resource type="Script" uid="uid://uur73dv6qen8" path="res://addons/konado/scripts/audio/voice/knd_voice_list.gd" id="6_3bwhi"]
@@ -40,10 +40,7 @@ dialogue_manager = NodePath("KonadoDialogueManager")
 
 [node name="KonadoDialogueManager" parent="." unique_id=1487339260 instance=ExtResource("1_57pxw")]
 layout_mode = 1
-dialogue_variables = Dictionary[String, int]({
-"love": 0
-})
-start_dialogue_shot = ExtResource("3_sgljs")
+start_dialogue_shot = ExtResource("4_dv03n")
 chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
 bgm_list = ExtResource("5_qcbmp")

@@ -81,7 +81,10 @@ func save_game(save_id: int) -> bool:
 		save_data.dialogue_state = _capture_dialogue_state()
 	
 	if save_strategy["include_variables"]:
-		save_data.variables = dialogue_manager.dialogue_variables.duplicate(true)
+		if dialogue_manager.variable_store:
+			save_data.variables = dialogue_manager.variable_store.to_dict()
+		else:
+			save_data.variables = {}
 	
 	if save_strategy["include_audio_state"]:
 		save_data.audio_state = _capture_audio_state()
@@ -163,21 +166,11 @@ func load_game(save_id: int) -> bool:
 	
 	# 恢复游戏变量
 	if save_strategy["include_variables"] and save_data.variables:
-		# 确保dialogue_variables是正确的类型
-		dialogue_manager.dialogue_variables.clear()
-		for key in save_data.variables.keys():
-			var value = save_data.variables[key]
-			# 确保值是整数类型
-			if typeof(value) == TYPE_INT:
-				dialogue_manager.dialogue_variables[key] = value
-			else:
-				# 尝试转换为整数
-				var int_value = int(value)
-				if typeof(int_value) == TYPE_INT:
-					dialogue_manager.dialogue_variables[key] = int_value
-				else:
-					# 如果转换失败，跳过该变量
-					print("跳过无效变量: " + key + " = " + str(value))
+		if dialogue_manager.variable_store:
+			dialogue_manager.variable_store.from_dict(save_data.variables)
+		else:
+			dialogue_manager.variable_store = KND_VariableStore.new()
+			dialogue_manager.variable_store.from_dict(save_data.variables)
 	
 	print("读档成功: " + save_path)
 	load_completed.emit(save_id, true)

@@ -1,6 +1,6 @@
 # Konado 코나도: 비주얼 노벨 프레임워크
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | 한국어 | [Español](README.es.md) | [Français](README.fr.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | 한국어
 
 
 <div align="center" style="border-radius: 12px; overflow: hidden">

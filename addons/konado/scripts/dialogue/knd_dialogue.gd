@@ -17,10 +17,12 @@ enum Type {
 	IFELSE_BRANCH,
 	BRANCH,          # Deprecated - 保留枚举值兼容性
 	JUMP,
+	JUMP_BRANCH,
 	SIGNAL,
 	ACHIEVEMENT_UNLOCK,
 	ACHIEVEMENT_PROGRESS,
 	ACHIEVEMENT_FLAG,
+	SET_VARIABLE,
 	THE_END
 }
 
@@ -88,6 +90,8 @@ enum Type {
 @export var custom_signal_name: String
 ## 目标跳转的镜头
 @export var jump_shot_path: String
+## 目标跳转的分支标签
+@export var jump_branch_target: String = ""
 ## 成就ID
 @export var achievement_id: String = ""
 ## 成就进度值
@@ -96,3 +100,23 @@ enum Type {
 @export var achievement_flag_name: String = ""
 ## 成就标签值
 @export var achievement_flag_value: bool = false
+
+## 目标变量名
+@export var variable_name: String = ""
+## 变量操作类型 (0: SET, 1: ADD, 2: SUB, 3: MUL, 4: DIV)
+@export var variable_operation: int = 0
+## 变量操作数值（字符串形式存储，运行时解析）
+@export var variable_operand: String = ""
+## 是否为持久变量（%前缀=true，$前缀=false）
+@export var is_persistent: bool = true
+
+
+func add_choice(text: String, target_id: String) -> void:
+	var c := KND_DialogueChoice.new()
+	c.choice_text = text
+	c.next_id = target_id
+	choices.append(c)
+
+
+func clear_choices() -> void:
+	choices.clear()

@@ -1,5 +1,6 @@
 background 00 fade
 
+
 if %love == 0:
     "" "看来你是新手呢"
 else:
@@ -15,7 +16,11 @@ else:
 endif
 
 
-choice "开始" start_choice "不看了" exit_choice
+choice "开始" -> start_choice
+
+choice "不看了" -> exit_choice
+
+choice "我要看看变量系统" -> goto_ks3
 
 branch start_choice
     background 01 fade
@@ -50,4 +55,7 @@ branch exit_choice
     actor exit 可娜
     background bg_end fade
     end
+    
+branch goto_ks3
+    jump res://sample/demo/demo_03_variable.ks
 # 一定要随时点上面红色的保存按钮啊！Ctrl+S不保存脚本的！

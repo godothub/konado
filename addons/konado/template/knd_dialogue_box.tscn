@@ -19,6 +19,8 @@ shader_parameter/softness = 3.0
 shader_parameter/angle_rad = 0.0
 shader_parameter/spatial_blend = 0.15
 shader_parameter/rect_size = Vector2(1720, 120)
+shader_parameter/line_count = 0
+shader_parameter/line_height = 20.0
 
 [node name="KonadoDialogueBox" type="Control" unique_id=1215106161 node_paths=PackedStringArray("typewriter_text")]
 layout_mode = 3
@@ -32,7 +34,6 @@ size_flags_vertical = 4
 theme = ExtResource("1_t8rxq")
 script = ExtResource("2_c0wvo")
 typing_effect_audio = ExtResource("3_c0wvo")
-typewriter_mode = 1
 typewriter_text = NodePath("dialogue_container/VBoxContainer/KND_TypewriterText")
 
 [node name="dialogue_container" type="MarginContainer" parent="." unique_id=1266611211]

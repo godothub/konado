@@ -20,7 +20,7 @@ actor show 可娜 正常 at 3 9 scale 0.3
 
 achievement unlock "first_blood"
 
-achievement increment "enemies_defeated" 1
+achievement increment "explorer" 1
 
 achievement set_flag "secret_ending_found" true
 

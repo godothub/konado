@@ -1,0 +1,14 @@
+[remap]
+
+importer="konado.scripts"
+type="Resource"
+uid="uid://ble8bpbma0sdj"
+path="res://.godot/imported/demo_03_variable.ks-959e7af4be08762a4fc9bce6585cf9c7.res"
+
+[deps]
+
+source_file="res://sample/demo/demo_03_variable.ks"
+dest_files=["res://.godot/imported/demo_03_variable.ks-959e7af4be08762a4fc9bce6585cf9c7.res"]
+
+[params]
+

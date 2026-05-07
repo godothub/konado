@@ -55,12 +55,12 @@ func _init() -> void:
 	dialogue_content_regex = RegEx.new()
 	dialogue_content_regex.compile("^\"(.*?)\"\\s+\"(.*?)\"(?:\\s+(\\S+))?$")
 
-	# 匹配 if %变量名 == 值（支持数字），结尾冒号可选（:?）
+	# 匹配 if %变量名 == 值 或 if $变量名 == 值（支持数字），结尾冒号可选（:?）
 	condition_regex = RegEx.new()
-	condition_regex.compile("^if\\s+%(\\w+)\\s*(==|>=|<=|>|<)\\s*(\\d+):$")
-	# 匹配 %变量名 格式的变量引用
+	condition_regex.compile("^if\\s+([%$])(\\w+)\\s*(==|!=|>=|<=|>|<)\\s*(\\d+):$")
+	# 匹配 %变量名 或 $变量名 格式的变量引用
 	var_ref_regex = RegEx.new()
-	var_ref_regex.compile("%(\\w+)")
+	var_ref_regex.compile("([%$])(\\w+)")
 
 ## 生成唯一节点ID
 func _next_node_id() -> String:
@@ -120,6 +120,40 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 			i += 1
 			continue
 
+		if line.begins_with("choice "):
+			var choice_dialog := KND_Dialogue.new()
+			choice_dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
+			choice_dialog.source_file_line = original_line_number
+
+			while i < raw_script_lines.size():
+				var cline = raw_script_lines[i].strip_edges()
+				if cline.is_empty() or cline.begins_with("#"):
+					i += 1
+					continue
+				if not cline.begins_with("choice "):
+					break
+				if not _parse_single_choice_line(cline, choice_dialog):
+					_scripts_debug(path, i + 2, "选项解析失败: %s" % cline)
+					return null
+				i += 1
+
+			if choice_dialog.choices.size() == 0:
+				_scripts_debug(path, original_line_number, "选项行没有有效的选项")
+				return null
+
+			var jump_tags = []
+			for c in choice_dialog.choices:
+				jump_tags.append(c.next_id)
+			cur_tmp_option_lines[original_line_number] = jump_tags
+
+			var choices_strs = ""
+			for c in choice_dialog.choices:
+				choices_strs += "\"" + c.choice_text + "\" -> " + c.next_id + "  "
+			_scripts_info(path, original_line_number, "选项解析完成 选项数量: " + str(choice_dialog.choices.size()) + "  选项: " + choices_strs)
+
+			main_dialogues.append(choice_dialog)
+			continue
+
 		var dialog: KND_Dialogue = parse_line(line, original_line_number, path, shot)
 		if dialog:
 			if dialog.dialog_type == KND_Dialogue.Type.BRANCH:
@@ -134,8 +168,6 @@ func process_scripts_to_data(path: String) -> KND_Shot:
 		else:
 			_scripts_debug(path, original_line_number, "解析失败：无法识别的语法，终止解析: %s" % line)
 			return null
-
-		i += 1
 
 	_scripts_info(path, 0, "文件：%s 章节ID：%s 对话数量：%d" %
 		[path, shot.shot_id, main_dialogues.size()])
@@ -199,7 +231,7 @@ func _post_process_shot(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> 
 		var cur = main_dialogues[idx]
 		var nxt = main_dialogues[idx + 1]
 		# 选项节点不需要主线next_id（选项由choice.next_id控制）
-		if cur.dialog_type != KND_Dialogue.Type.SHOW_CHOICE and cur.dialog_type != KND_Dialogue.Type.THE_END and cur.dialog_type != KND_Dialogue.Type.JUMP:
+		if cur.dialog_type != KND_Dialogue.Type.SHOW_CHOICE and cur.dialog_type != KND_Dialogue.Type.THE_END and cur.dialog_type != KND_Dialogue.Type.JUMP and cur.dialog_type != KND_Dialogue.Type.JUMP_BRANCH:
 			if cur.dialog_type == KND_Dialogue.Type.IFELSE_BRANCH:
 				# if/else节点的next_id指向下一个主线节点（汇合点）
 				cur.next_id = nxt.node_id
@@ -214,7 +246,16 @@ func _post_process_shot(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> 
 					choice.next_id = tag_to_first_node_id[choice.next_id]
 				else:
 					_scripts_warning(tmp_path, d.source_file_line,
-						"选项跳转标签 '%s' 未找到对应分支" % choice.next_id)
+					"选项跳转标签 '%s' 未找到对应分支" % choice.next_id)
+
+	# 5.5 解析jump_branch的next_id（从tag名称转换为node_id）
+	_resolve_jump_branch_targets(main_dialogues, tag_to_first_node_id)
+	for tag_name in tmp_branches:
+		_resolve_jump_branch_targets(tmp_branches[tag_name], tag_to_first_node_id)
+	for key in tmp_ifelse_blocks:
+		var blocks = tmp_ifelse_blocks[key]
+		_resolve_jump_branch_targets(blocks.get("if", []), tag_to_first_node_id)
+		_resolve_jump_branch_targets(blocks.get("else", []), tag_to_first_node_id)
 
 	# 6. 连接if/else块的next_id
 	for d in main_dialogues:
@@ -257,6 +298,35 @@ func _post_process_shot(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> 
 			if cur.next_id.is_empty():
 				cur.next_id = nxt.node_id
 
+	# 7.5 连接分支内if/else块的next_id（步骤7已设置IFELSE_BRANCH.next_id为收敛点）
+	for tag_name in tmp_branches:
+		var branch_dialogs: Array = tmp_branches[tag_name]
+		for d in branch_dialogs:
+			if d.dialog_type == KND_Dialogue.Type.IFELSE_BRANCH:
+				var key = d.get_meta("ifelse_key", "")
+				if key.is_empty():
+					continue
+				if ifelse_if_first.has(key):
+					d.if_next_id = ifelse_if_first[key]
+				if ifelse_else_first.has(key):
+					d.else_next_id = ifelse_else_first[key]
+				var converge_id = d.next_id
+				if not converge_id.is_empty():
+					if ifelse_if_last.has(key):
+						var blocks = tmp_ifelse_blocks[key]
+						var if_dialogs: Array = blocks.get("if", [])
+						if if_dialogs.size() > 0:
+							var last_if = if_dialogs[if_dialogs.size() - 1]
+							if last_if.next_id.is_empty():
+								last_if.next_id = converge_id
+					if ifelse_else_last.has(key):
+						var blocks = tmp_ifelse_blocks[key]
+						var else_dialogs: Array = blocks.get("else", [])
+						if else_dialogs.size() > 0:
+							var last_else = else_dialogs[else_dialogs.size() - 1]
+							if last_else.next_id.is_empty():
+								last_else.next_id = converge_id
+
 	# 8. 连接if/else块内对话的next_id
 	for key in tmp_ifelse_blocks:
 		var blocks = tmp_ifelse_blocks[key]
@@ -287,6 +357,16 @@ func _post_process_shot(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> 
 	if shot.dialogues.size() > 0:
 		shot.start_node_id = main_dialogues[0].node_id
 
+func _resolve_jump_branch_targets(dialogs: Array, tag_to_first_node_id: Dictionary) -> void:
+	for d in dialogs:
+		if d.dialog_type == KND_Dialogue.Type.JUMP_BRANCH:
+			var target = d.jump_branch_target
+			if tag_to_first_node_id.has(target):
+				d.next_id = tag_to_first_node_id[target]
+			else:
+				_scripts_warning(tmp_path, d.source_file_line,
+					"jump_branch 目标分支 '%s' 未找到" % target)
+
 # 单行解析模式
 func parse_single_line(line: String, line_number: int, path: String) -> KND_Dialogue:
 	return parse_line(line.strip_edges(), line_number, path, null)
@@ -312,6 +392,9 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 	if _parse_choice(line, dialog):
 		print("解析成功：选择相关\n")
 		return dialog
+	if _parse_jump_branch(line, dialog):
+		print("解析成功：跳转分支\n")
+		return dialog
 	if _parse_jumpshot(line, dialog):
 		print("解析成功：跳转镜头相关\n")
 		return dialog
@@ -320,6 +403,9 @@ func parse_line(line: String, line_number: int, path: String, diadata: KND_Shot)
 		return dialog
 	if _parse_achievement(line, dialog):
 		print("解析成功：成就系统\n")
+		return dialog
+	if _parse_variable(line, dialog):
+		print("解析成功：变量操作\n")
 		return dialog
 	if _parse_end(line, dialog, diadata):
 		print("解析成功：结束相关\n")
@@ -365,12 +451,13 @@ func _parse_condition(line: String, start_index: int, line_number: int, path: St
 	# 解析if条件表达式
 	var cond_match = condition_regex.search(line)
 	if not cond_match:
-		_scripts_debug(path, original_line_num, "条件判断格式错误：%s（正确格式：if %%变量名 == 整数，支持操作符：==、>、<、>=、<=）" % line)
+		_scripts_debug(path, original_line_num, "条件判断格式错误：%s（正确格式：if %%变量名 == 整数 或 if $变量名 == 整数，支持操作符：==、!=、>、<、>=、<=）" % line)
 		return null
 
-	var var_name = cond_match.get_string(1)
-	var operator_str = cond_match.get_string(2)
-	var target_value = cond_match.get_string(3).to_int()
+	var prefix = cond_match.get_string(1)
+	var var_name = cond_match.get_string(2)
+	var operator_str = cond_match.get_string(3)
+	var target_value = cond_match.get_string(4).to_int()
 
 	var condition_op: int = 0
 	match operator_str:
@@ -384,10 +471,13 @@ func _parse_condition(line: String, start_index: int, line_number: int, path: St
 			condition_op = 3
 		"<=":
 			condition_op = 4
+		"!=":
+			condition_op = 5
 
 	cur_dialogue.varname = var_name
 	cur_dialogue.condition_operator = condition_op
 	cur_dialogue.target_value = target_value
+	cur_dialogue.is_persistent = (prefix == "%")
 
 	# 解析if块内容（直到else或endif）
 	var if_block_lines = []
@@ -504,7 +594,8 @@ func _parse_indented_block(start_index: int, start_line_num: int) -> Array[Dicti
 		# 添加到块内容（去掉缩进）
 		block_lines.append({
 			"line": line_stripped,
-			"line_number": line_num
+			"line_number": line_num,
+			"index": current_index
 		})
 
 		current_index += 1
@@ -612,50 +703,86 @@ func _parse_audio(line: String, dialog: KND_Dialogue) -> bool:
 
 	return true
 
-# 解析选项（仅保留单行式choice：choice "文本" 标签 "文本2" 标签2）
+func _parse_single_choice_line(line: String, dialog: KND_Dialogue) -> bool:
+	var content = line.substr(6).strip_edges()
+
+	var regex = RegEx.new()
+	regex.compile('"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|(\\S+)')
+
+	var matches = regex.search_all(content)
+	var raw_parts = []
+
+	for match in matches:
+		if match.get_string(1) != "":
+			var text = match.get_string(1).replace('\\"', '"')
+			raw_parts.append(text)
+		elif match.get_string(2) != "":
+			raw_parts.append(match.get_string(2))
+
+	var parts = []
+	var j = 0
+	while j < raw_parts.size():
+		if raw_parts[j] == "->":
+			j += 1
+			continue
+		parts.append(raw_parts[j])
+		j += 1
+
+	if parts.size() != 2:
+		return false
+
+	var choice = KND_DialogueChoice.new()
+	choice.choice_text = parts[0]
+	choice.next_id = parts[1]
+	dialog.choices.append(choice)
+	return true
+
+# 解析选项（格式：choice "文本" -> 标签 "文本2" -> 标签2）
 func _parse_choice(line: String, dialog: KND_Dialogue) -> bool:
-	# 仅匹配单行式choice：以choice开头，且不是choice:
 	if not line.begins_with("choice ") or line.begins_with("choice:"):
 		return false
 
 	dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
 	dialog.choices.clear()
 
-	# 移除开头的"choice"关键字
 	var content = line.substr(6).strip_edges()
 
-	# 使用正则表达式来正确解析带引号的字符串
 	var regex = RegEx.new()
 	regex.compile('"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|(\\S+)')
 
 	var matches = regex.search_all(content)
-	var parts = []
+	var raw_parts = []
 
 	for match in matches:
-		if match.get_string(1) != "":  # 带引号的部分
+		if match.get_string(1) != "":
 			var text = match.get_string(1).replace('\\"', '"')
-			parts.append(text)
-		elif match.get_string(2) != "":  # 无引号的部分
-			parts.append(match.get_string(2))
+			raw_parts.append(text)
+		elif match.get_string(2) != "":
+			raw_parts.append(match.get_string(2))
 
-	# 验证parts数量
+	var parts = []
+	var i = 0
+	while i < raw_parts.size():
+		if raw_parts[i] == "->":
+			i += 1
+			continue
+		parts.append(raw_parts[i])
+		i += 1
+
 	if parts.size() % 2 != 0:
-		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签")
+		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签，格式: choice \"文本\" -> 标签")
 		return false
 
-	# 创建选项对象（next_id暂时存放tag名称，后处理时转换为node_id）
-	for i in range(0, parts.size(), 2):
+	for ic in range(0, parts.size(), 2):
 		var choice = KND_DialogueChoice.new()
-		choice.choice_text = parts[i]
-		choice.next_id = parts[i + 1]  # 暂存tag名称
+		choice.choice_text = parts[ic]
+		choice.next_id = parts[ic + 1]
 		dialog.choices.append(choice)
 
-	# 记录日志
 	var choices_strs = ""
 	for choice in dialog.choices:
 		choices_strs += "\"" + choice.choice_text + "\" -> " + choice.next_id + "  "
 
-	# 记录跳转标签用于后续验证
 	var jump_tags = []
 	for choice in dialog.choices:
 		jump_tags.append(choice.next_id)
@@ -681,7 +808,9 @@ func _parse_branch(line: String, dialog: KND_Dialogue) -> bool:
 
 	# 解析branch内的内容
 	var branch_dialogues: Array[KND_Dialogue] = []
-	for block_line_info in branch_block_lines:
+	var idx = 0
+	while idx < branch_block_lines.size():
+		var block_line_info = branch_block_lines[idx]
 		var inner_line = block_line_info.line
 		var inner_line_num = block_line_info.line_number
 
@@ -689,9 +818,23 @@ func _parse_branch(line: String, dialog: KND_Dialogue) -> bool:
 			_scripts_debug(tmp_path, inner_line_num, "branch内不能嵌套branch")
 			return false
 
+		if inner_line.begins_with("if "):
+			var saved_line_number = tmp_line_number
+			tmp_line_number = block_line_info.index
+			var inner_dialog = parse_line(inner_line, inner_line_num, tmp_path, null)
+			if inner_dialog:
+				branch_dialogues.append(inner_dialog)
+			var consumed_until = tmp_line_number
+			tmp_line_number = saved_line_number
+			idx += 1
+			while idx < branch_block_lines.size() and branch_block_lines[idx].index <= consumed_until:
+				idx += 1
+			continue
+
 		var inner_dialog = parse_line(inner_line, inner_line_num, tmp_path, null)
 		if inner_dialog:
 			branch_dialogues.append(inner_dialog)
+		idx += 1
 
 	# 存储到临时分支字典
 	tmp_branches[branch_id] = branch_dialogues
@@ -699,6 +842,19 @@ func _parse_branch(line: String, dialog: KND_Dialogue) -> bool:
 
 	_scripts_info(tmp_path, tmp_original_line_number, "标签" + branch_id + "解析完成" + " " + "标签内有" + str(branch_dialogues.size()) + "行对话")
 
+	return true
+
+# 分支内跳转解析
+func _parse_jump_branch(line: String, dialog: KND_Dialogue) -> bool:
+	if not line.begins_with("jump_branch"):
+		return false
+
+	var parts = line.split(" ", false)
+	if parts.size() < 2:
+		_scripts_debug(tmp_path, tmp_original_line_number, "jump_branch格式错误：缺少目标分支名")
+		return false
+	dialog.dialog_type = KND_Dialogue.Type.JUMP_BRANCH
+	dialog.jump_branch_target = parts[1]
 	return true
 
 # 跳转解析
@@ -728,6 +884,58 @@ func _parse_dialog(line: String, dialog: KND_Dialogue) -> bool:
 	if result.get_string(3):
 		dialog.voice_id = result.get_string(3)
 
+	return true
+
+func _parse_variable(line: String, dialog: KND_Dialogue) -> bool:
+	var parts = line.split(" ", false)
+	if parts.size() < 3:
+		return false
+
+	var op_str = parts[0]
+	var var_name_raw = parts[1]
+	var operand_raw = ""
+
+	var is_persistent: bool
+	if var_name_raw.begins_with("%"):
+		is_persistent = true
+	elif var_name_raw.begins_with("$"):
+		is_persistent = false
+	else:
+		return false
+
+	var var_name = var_name_raw.substr(1)
+
+	var op: int = -1
+	match op_str:
+		"set":
+			op = KND_VariableStore.Operation.SET
+		"add":
+			op = KND_VariableStore.Operation.ADD
+		"sub":
+			op = KND_VariableStore.Operation.SUB
+		"mul":
+			op = KND_VariableStore.Operation.MUL
+		"div":
+			op = KND_VariableStore.Operation.DIV
+		_:
+			return false
+
+	if parts.size() >= 4 and parts[2] == "=":
+		operand_raw = " ".join(parts.slice(3))
+	else:
+		operand_raw = " ".join(parts.slice(2))
+
+	operand_raw = operand_raw.strip_edges()
+	if operand_raw.begins_with("\"") and operand_raw.ends_with("\""):
+		operand_raw = operand_raw.substr(1, operand_raw.length() - 2)
+
+	dialog.dialog_type = KND_Dialogue.Type.SET_VARIABLE
+	dialog.variable_name = var_name
+	dialog.variable_operation = op
+	dialog.variable_operand = operand_raw
+	dialog.is_persistent = is_persistent
+
+	_scripts_info(tmp_path, tmp_original_line_number, "变量操作: %s %s%s = %s" % [op_str, "%" if is_persistent else "$", var_name, operand_raw])
 	return true
 
 ## 解析结束

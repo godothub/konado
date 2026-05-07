@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Konado"
   text: "Visual Novel Framework"
-  tagline: "Visual novel framework based on Godot Engine"
+  tagline: "Visual novel and general game dialogue solution based on Godot Engine"
   image:
     src: "https://godothub.atomgit.net/web/icon/konado/kona/kona.png"
   actions:
