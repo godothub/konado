@@ -119,20 +119,6 @@
 					"type": 1,
 					"default_value": false,
 					"platforms": ["debug"]
-				},
-				{
-					"key": "windows_only",
-					"label": "Windows专属",
-					"type": 1,
-					"default_value": false,
-					"platforms": ["windows"]
-				},
-				{
-					"key": "mobile_only",
-					"label": "移动设备专属",
-					"type": 1,
-					"default_value": false,
-					"platforms": ["android", "ios"]
 				}
 			]
 		}

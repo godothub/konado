@@ -3,9 +3,8 @@ extends EditorPlugin
 class_name KonadoEditorPlugin
 # Konado框架入口文件，负责初始化插件和注册相关功能
 
-## 插件版本信息
 const VERSION: String = "2.4.0"
-const CODENAME: String = "Macaron"
+const CODENAME: String = "Cannoli"
 
 ## 自定义EditorImportPlugin脚本
 const KS_IMPORTER_SCRIPT := preload("res://addons/konado/importer/konado_importer.gd")
@@ -21,7 +20,6 @@ const TRANSLATION_PATHS: PackedStringArray = [
 	#"res://addons/konado/i18n/i18n.ko.translation",
 	#"res://addons/konado/i18n/i18n.de.translation"
 ]
-
 
 
 ## 插件实例变量
@@ -77,26 +75,17 @@ func _enter_tree() -> void:
 # 控制显示
 func _make_visible(visible: bool) -> void:
 	if visible:
-		if _active_editor == "graph":
-			if graph_editor:
-				graph_editor.show()
-			if ks_editor:
-				ks_editor.hide()
-		else:
-			if ks_editor:
-				if ks_editor.get_parent() is Window:
-					get_editor_interface().set_main_screen_editor("Script")
-					ks_editor.show()
-					ks_editor.get_parent().grab_focus()
-				else:
-					ks_editor.show()
-			if graph_editor:
-				graph_editor.hide()
+		if ks_editor:
+			if ks_editor.get_parent() is Window:
+				get_editor_interface().set_main_screen_editor("Script")
+				ks_editor.show()
+				ks_editor.get_parent().grab_focus()
+			else:
+				ks_editor.show()
 	else:
 		if ks_editor:
 			ks_editor.hide()
-		if graph_editor:
-			graph_editor.hide()
+
 
 func _exit_tree() -> void:
 	_cleanup_import_plugins()
@@ -120,8 +109,6 @@ func _exit_tree() -> void:
 func _handles(object: Object) -> bool:
 	if object is Resource and object.resource_path.get_extension() == "ks":
 		return true
-	if object is KND_Shot:
-		return true
 	return false
 
 
@@ -131,15 +118,8 @@ func _edit(object: Object) -> void:
 		ks_editor.edit(object.resource_path)
 		ks_editor.show()
 		graph_editor.hide()
-	elif object is KND_Shot:
-		_active_editor = "graph"
-		if graph_editor:
-			graph_editor.edit(object.resource_path)
-			graph_editor.show()
-		ks_editor.hide()
 	
 	
-
 ## 设置导入插件
 func _setup_import_plugins() -> void:
 	ks_import_plugin = KS_IMPORTER_SCRIPT.new()

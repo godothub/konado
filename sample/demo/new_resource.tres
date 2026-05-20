@@ -3,52 +3,52 @@
 [ext_resource type="Script" uid="uid://5dxx84u6uyy0" path="res://addons/konado/scripts/character/knd_character.gd" id="1_6oy8v"]
 [ext_resource type="Script" uid="uid://dxbtmvyauvfln" path="res://addons/konado/scripts/character/knd_character_status.gd" id="2_7mst4"]
 [ext_resource type="Script" uid="uid://bl7m0mtuh2jqi" path="res://addons/konado/scripts/character/knd_character_list.gd" id="2_vqfl5"]
-[ext_resource type="Texture2D" uid="uid://c70k2vfccg61u" path="res://assets/kona/可娜立绘1.png" id="3_7mst4"]
-[ext_resource type="Texture2D" uid="uid://bihrnadiy0hda" path="res://assets/kona/可娜立绘2.png" id="4_thc2m"]
-[ext_resource type="Texture2D" uid="uid://6j67b0p34faq" path="res://assets/kona/可娜立绘3.png" id="5_vuu78"]
-[ext_resource type="Texture2D" uid="uid://etdi3ftaex7f" path="res://assets/kona/可娜立绘4.png" id="6_g2x1e"]
-[ext_resource type="Texture2D" uid="uid://2silbilr6g8g" path="res://assets/kona/可娜立绘6.png" id="7_rgsqj"]
-[ext_resource type="Texture2D" uid="uid://l2r8gjfdtvwg" path="res://assets/kona/可娜立绘5.png" id="7_xc1ds"]
+[ext_resource type="Texture2D" uid="uid://d86es3yopbu2" path="res://assets/kona_portrait/可娜立绘 (1).PNG" id="3_xc1ds"]
+[ext_resource type="Texture2D" uid="uid://0388u2vtxu8" path="res://assets/kona_portrait/可娜立绘 (2).PNG" id="4_88rgo"]
+[ext_resource type="Texture2D" uid="uid://dadand7snjrvn" path="res://assets/kona_portrait/可娜立绘 (3).PNG" id="5_wqkwt"]
+[ext_resource type="Texture2D" uid="uid://b206jn8b45oaq" path="res://assets/kona_portrait/可娜立绘 (4).PNG" id="6_veeya"]
+[ext_resource type="Texture2D" uid="uid://k3bandjoiw3r" path="res://assets/kona_portrait/可娜立绘 (5).PNG" id="7_1fuu0"]
+[ext_resource type="Texture2D" uid="uid://bayxwhw3shs2o" path="res://assets/kona_portrait/可娜立绘 (6).PNG" id="8_ijtbt"]
 
 [sub_resource type="Resource" id="Resource_vqfl5"]
 script = ExtResource("2_7mst4")
 status_name = "正常"
-status_texture = ExtResource("3_7mst4")
+status_texture = ExtResource("3_xc1ds")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_thc2m"]
 script = ExtResource("2_7mst4")
 status_name = "惊讶"
-status_texture = ExtResource("4_thc2m")
+status_texture = ExtResource("4_88rgo")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_vuu78"]
 script = ExtResource("2_7mst4")
 status_name = "害羞"
-status_texture = ExtResource("5_vuu78")
+status_texture = ExtResource("5_wqkwt")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_rgsqj"]
 script = ExtResource("2_7mst4")
 status_name = "闭眼"
-status_texture = ExtResource("6_g2x1e")
+status_texture = ExtResource("6_veeya")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_88rgo"]
 script = ExtResource("2_7mst4")
 status_name = "介绍正常"
-status_texture = ExtResource("7_xc1ds")
+status_texture = ExtResource("7_1fuu0")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_xc1ds"]
 script = ExtResource("2_7mst4")
 status_name = "介绍说话"
-status_texture = ExtResource("7_rgsqj")
+status_texture = ExtResource("8_ijtbt")
 metadata/_custom_type_script = "uid://dxbtmvyauvfln"
 
 [sub_resource type="Resource" id="Resource_7mst4"]
 script = ExtResource("1_6oy8v")
-chara_name = "可娜"
+chara_name = "Kona"
 chara_status = Array[ExtResource("2_7mst4")]([SubResource("Resource_vqfl5"), SubResource("Resource_thc2m"), SubResource("Resource_vuu78"), SubResource("Resource_rgsqj"), SubResource("Resource_88rgo"), SubResource("Resource_xc1ds")])
 metadata/_custom_type_script = "uid://5dxx84u6uyy0"
 

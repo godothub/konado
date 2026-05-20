@@ -40,9 +40,22 @@ func _build_tabs() -> void:
 	if mgr == null:
 		return
 	for cat: KND_SettingCategory in mgr.get_categories():
+		var margc: MarginContainer = MarginContainer.new()
+		margc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		margc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		margc.name = cat.display_name
+		var margin_value = 20
+		margc.add_theme_constant_override("margin_top", margin_value)
+		margc.add_theme_constant_override("margin_left", margin_value)
+		margc.add_theme_constant_override("margin_bottom", margin_value)
+		margc.add_theme_constant_override("margin_right", margin_value)
+
+		
 		var scroll := ScrollContainer.new()
 		scroll.name = cat.display_name
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		margc.add_child(scroll)
 
 		var vbox := VBoxContainer.new()
 		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -52,7 +65,7 @@ func _build_tabs() -> void:
 			var row: HBoxContainer = KND_SettingsUIFactory.create_control(cat.id, item, _on_value_changed)
 			vbox.add_child(row)
 
-		_tab_container.add_child(scroll, true)
+		_tab_container.add_child(margc, true)
 
 ## 重建UI
 func rebuild() -> void:
@@ -61,7 +74,6 @@ func rebuild() -> void:
 	# 等待一帧让节点被移除
 	await get_tree().create_timer(0.1).timeout
 	_build_tabs()
-
 
 
 ## 当设置值改变时调用

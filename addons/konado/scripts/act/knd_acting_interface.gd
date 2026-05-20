@@ -137,6 +137,41 @@ func init_transtion_config() -> void:
 		}
 	}
 
+## 清空背景
+func clean_background(effects_type: BackgroundTransitionEffectsType) -> void:
+	var image = Image.create(256, 256, false, Image.FORMAT_RGBA8)
+	image.fill(Color.BLACK)
+	var tex = ImageTexture.create_from_image(image)
+	if effects_type == BackgroundTransitionEffectsType.NONE_EFFECT:
+		_background.material.set_shader(none_effect_shader)
+		_background.material.set_shader_parameter("target_texture", tex)
+		current_texture = tex
+		background_change_finished.emit()
+		return
+	
+	var config = TRANSITION_CONFIGS.get(effects_type, TRANSITION_CONFIGS[BackgroundTransitionEffectsType.NONE_EFFECT])
+
+	_background.material.set("shader", config.shader)
+	print(_background.material.get_shader())
+	_background.material.set_shader_parameter("progress", 0.0)
+	_background.material.set_shader_parameter("current_texture", current_texture)
+	_background.material.set_shader_parameter("target_texture", tex)
+
+	# 创建并配置过渡动画
+	effect_tween = get_tree().create_tween()
+	effect_tween.tween_property(
+		_background.material, 
+		"shader_parameter/progress", 
+		config.progress_target, 
+		config.duration
+	)
+	effect_tween.set_ease(config.tween_trans)
+	
+	# 动画完成回调
+	effect_tween.finished.connect(_on_transition_finished.bind(_background.material, tex))
+	effect_tween.play()
+	
+
 ## 显示背景图片的方法
 func change_background_image(tex: Texture, name: String, effects_type: BackgroundTransitionEffectsType) -> void:
 	if not tex:
@@ -200,7 +235,7 @@ func _on_transition_finished(mat: ShaderMaterial, target_tex: Texture) -> void:
 	
 	
 # 新建角色图片的方法
-func create_new_character(chara_id: String, h_division: int, v_division: int, pos_h: int, pos_v: int, state: String, tex: Texture, actor_scale: float, mirror: bool) -> void:
+func create_new_character(chara_id: String, h_division: int, pos_h: int, state: String, tex: Texture) -> void:
 	# 检查创建的是否为场景已有角色
 	for chara_dict in actor_dict.values():
 		if chara_dict["id"] == chara_id:
@@ -220,11 +255,8 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 	var chara_dict: Dictionary = {
 		"id": chara_id,
 		"h_division": h_division,
-		"v_division": v_division,
 		"pos": pos_h,
-		"state": state,
-		"c_scale": actor_scale,
-		"mirror": mirror
+		"state": state
 		}
 		
 	# 添加到角色字典
@@ -234,12 +266,8 @@ func create_new_character(chara_id: String, h_division: int, v_division: int, po
 	temp_node.name = node_name
 	temp_node.use_tween = false
 	temp_node.h_division = h_division
-	temp_node.v_division = v_division
 	temp_node.h_character_position = pos_h
-	temp_node.v_character_position = pos_v
 	temp_node.set_character_texture(tex)
-	temp_node.set_texture_scale(actor_scale)
-	temp_node.mirror = mirror
 	# 添加到角色容器
 	_chara_controler.add_child(temp_node)
 	# 添加到演员节点字典
@@ -274,21 +302,23 @@ func highlight_actor(actor_id: String) -> void:
 	if actor_dict.size() <= 0:
 		return
 	for actor in actor_dict.keys():
-		var tmp = get_chara_node(actor).find_child(actor, true, false) as CanvasItem
-		if tmp == null :
-			return
-		tmp.set_modulate(Color(0.5, 0.5, 0.5))
+		var tmp = get_chara_node(actor)
+		if actor_id == actor:
+			tmp.set_highlight(true)
+		else:
+			tmp.set_highlight(false)
 
-	var chara_node: KND_Actor = get_chara_node(actor_id)
-	
-	if chara_node != null:
-		#如果剧情角色名字和演员名字不匹配，就pass，防止崩溃
-		var tex_node = chara_node.find_child(actor_id, true, false)
-		if tex_node:
-			# 修改字典中角色的状态
-			tex_node.set_modulate(Color(1.0, 1.0, 1.0))
-		pass
-	
+#
+	#var chara_node: KND_Actor = get_chara_node(actor_id)
+	##
+	#if chara_node != null:
+		##如果剧情角色名字和演员名字不匹配，就pass，防止崩溃
+		#var tex_node = chara_node.find_child(actor_id, true, false)
+		#if tex_node:
+			## 修改字典中角色的状态
+			#tex_node.set_modulate(Color(1.0, 1.0, 1.0))
+		#pass
+	#
 
 # 删除指定角色图片的方法
 func delete_character(chara_id: String) -> void:
@@ -319,13 +349,12 @@ func delete_all_actor() -> void:
 	print("删除所有演员")
 
 ## 移动演员的方法
-func move_actor(chara_id: String, target_h_division: int, target_v_division: int):
+func move_actor(chara_id: String, target_h_division: int):
 	print("移动演员")
 	print(target_h_division)
-	print(target_v_division)
 	var chara_node: KND_Actor = get_chara_node(chara_id) as KND_Actor
 	chara_node.h_character_position = target_h_division
-	chara_node.v_character_position = target_v_division
+
 	
 func _on_character_moved() -> void:
 	print("移动回调")

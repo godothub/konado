@@ -79,7 +79,6 @@ static func read_fields(node: GraphNode) -> KND_Dialogue:
 			d.character_state = _val(f, "character_state")
 			d.actor_position = Vector2(_fval(f, "pos_x"), _fval(f, "pos_y"))
 			d.actor_scale = _fval(f, "actor_scale")
-			d.actor_mirror = _bval(f, "actor_mirror")
 		KND_Dialogue.Type.ACTOR_CHANGE_STATE:
 			d.change_state_actor = _val(f, "change_state_actor")
 			d.change_state = _val(f, "change_state")
@@ -156,11 +155,8 @@ static func _actor_show(d: KND_Dialogue) -> GraphNode:
 	var f3 := _add_field(n, "Pos X", str(d.actor_position.x) if d else "3")
 	var f4 := _add_field(n, "Pos Y", str(d.actor_position.y) if d else "9")
 	var f5 := _add_field(n, "Scale", str(d.actor_scale) if d else "0.3")
-	var cb := CheckBox.new()
-	cb.text = "Mirror"
-	cb.button_pressed = d.actor_mirror if d else false
-	n.add_child(cb)
-	n.set_meta("fields", {"character_name": f1, "character_state": f2, "pos_x": f3, "pos_y": f4, "actor_scale": f5, "actor_mirror": cb})
+
+	n.set_meta("fields", {"character_name": f1, "character_state": f2, "pos_x": f3, "pos_y": f4, "actor_scale": f5})
 	n.set_slot(0, true, FLOW_PORT, FLOW_COLOR, true, FLOW_PORT, FLOW_COLOR)
 	return n
 

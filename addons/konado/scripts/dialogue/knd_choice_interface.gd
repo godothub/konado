@@ -23,7 +23,7 @@ func distroy_options() -> void:
 			child.queue_free()
 
 ## 显示对话选项的方法
-func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueManager, choices_font_size: int = 40) -> void:
+func display_options(choices: Array[KND_DialogueChoice], manager: KND_DialogueManager, choices_font_size: int = 32) -> void:
 	distroy_options()
 	
 	var tmp_list: Array[Button] = []

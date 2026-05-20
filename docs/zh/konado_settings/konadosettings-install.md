@@ -1,6 +1,6 @@
 ---
 title: 安装
-order: 1
+order: 3
 ---
 
 # 安装指南

@@ -24,6 +24,10 @@ signal custom_signal(content: String)
 
 @export_category("Playback Settings")
 
+## 是否检查对话节点可见，如果不可见不会执行后续初始化和播放操作，同时会订阅hidden信号，在节点隐藏时停止对话
+## 建议设置为true
+@export var check_visable: bool = true
+
 ## 是否在游戏开始时自动初始化对话，如果为true，则在游戏开始时自动初始化对话，否则需要手动初始化对话
 ## 手动初始化对话的方法为：在游戏开始时，调用`init_dialogue`方法
 @export var init_onstart: bool = true
@@ -54,9 +58,7 @@ var _temp_variables: Dictionary = {}
 @export_category("UI Settings")
 
 ## 演员画布横向分块
-@export var horizontal_division: int = 6
-## 演员画布纵向分块
-@export var vertical_division: int = 6
+@export var horizontal_division: int = 5
 
 ## 对话界面接口类
 @export var _konado_choice_interface: KND_ChoiceInterface
@@ -68,6 +70,9 @@ var _temp_variables: Dictionary = {}
 @export var _acting_interface: KND_ActingInterface
 ## 音频接口
 @export var _audio_interface: KND_AudioInterface
+
+## 自动播放按钮
+@export var _autoPlayButton: Button
 
 ## 对话资源ID
 var _dialog_data_id: int = 0
@@ -135,6 +140,17 @@ func _current_dialogue() -> KND_Dialogue:
 var achievement_mgr: Node = null
 
 func _ready() -> void:
+	if check_visable:
+		if not self.is_visible_in_tree():
+			printerr("对话已隐藏，不做任何操作")
+			return
+		self.hidden.connect(
+			func():
+				printerr("对话已隐藏，自动停止")
+				stop_dialogue()
+				)
+
+		
 	if enable_overlay_log:
 		print("开启日志记录器")
 		# 初始化Logger
@@ -153,6 +169,11 @@ func _ready() -> void:
 		_konado_dialogue_box.on_dialogue_click.connect(_process_next)
 	else:
 		push_error("未指定 _konado_dialogue_box")
+		
+	if _autoPlayButton:
+		_autoPlayButton.toggled.connect(start_autoplay)
+	else:
+		push_error("未指定 _autoPlayButton")
 	
 	# 设置存档系统的对话管理器引用
 	if save_system:
@@ -379,7 +400,7 @@ func _process(delta) -> void:
 					# 检查信号是否已经连接
 					if not s.is_connected(_auto_process_next.bind(s)):
 						s.connect(_auto_process_next.bind(s))
-					_acting_interface.move_actor(actor, pos.x, pos.y)
+					_acting_interface.move_actor(actor, pos.x)
 				# 如果是删除演员
 				elif cur_dialogue_type == KND_Dialogue.Type.EXIT_ACTOR:
 					# 删除演员
@@ -547,19 +568,24 @@ func isfinishtyping(wait_voice: bool) -> void:
 		# 如果有配音等待配音播放完成
 		if wait_voice:
 			await _audio_interface.voice_finish_playing
-			# 旁白等待两秒
 		else:
-			await get_tree().create_timer(autoplayspeed).timeout
+			print("触发打字完成信号")
+			var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
+			if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+				print("选项自动下一个")
+				await get_tree().create_timer(0.05).timeout
+				_process_next()
+			else:
+				await get_tree().create_timer(autoplayspeed).timeout
 		_process_next()
-		
-	# 检查下一句是否是选项，如果是自动下一句
-	var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
-	if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
-		print("选项自动下一个")
-		await get_tree().create_timer(0.1).timeout
-		_process_next()
-		
-	print("触发打字完成信号")
+	else:
+		# 检查下一句是否是选项，如果是自动下一句
+		var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
+		if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+			print("选项自动下一个")
+			await get_tree().create_timer(0.05).timeout
+			_process_next()
+		print("触发打字完成信号")
 	
 ## 处理下一个，绑定到下一个按钮
 func _process_next() -> void:
@@ -599,6 +625,8 @@ func _auto_process_next(s: Signal) -> void:
 	
 ## 关闭对话的方法
 func stop_dialogue() -> void:
+	_acting_interface.delete_all_actor()
+	_acting_interface.clean_background(KND_ActingInterface.BackgroundTransitionEffectsType.ALPHA_FADE_EFFECT)
 	print_rich("[color=yellow]关闭对话[/color]")
 	# 切换到关闭状态
 	_dialogue_goto_state(DialogState.OFF)
@@ -626,12 +654,13 @@ func _goto_next_node() -> void:
 ## 开始自动播放的方法
 func start_autoplay(value: bool):
 	autoplay = value
-	#if value:
-		##_autoPlayButton.set_text("停止播放")
-	#else:
-		##_autoPlayButton.set_text("自动播放")
+	if value:
+		_autoPlayButton.set_text("停止播放")
+	else:
+		_autoPlayButton.set_text("自动播放")
+	await get_tree().process_frame
 	_process_next()
-	pass
+	
 	
 	
 ## 显示背景的方法
@@ -685,13 +714,8 @@ func _display_character(dialogue: KND_Dialogue) -> void:
 			break
 	# 角色位置
 	var pos = dialogue.actor_position
-	# 角色缩放
-	var a_scale = dialogue.actor_scale
-	
-	# 角色立绘镜像翻转
-	var mirror = dialogue.actor_mirror
 	# 创建角色
-	_acting_interface.create_new_character(target_chara_name, horizontal_division, vertical_division, pos.x, pos.y, target_state_name, target_state_tex, a_scale, mirror)
+	_acting_interface.create_new_character(target_chara_name, horizontal_division, pos.x, target_state_name, target_state_tex)
 		
 ## 演员退场
 func _exit_actor(actor_name: String) -> void:

@@ -54,8 +54,6 @@ public partial class DialogueActor : Resource
         public new static readonly StringName CharacterName = "character_name";
         public new static readonly StringName CharacterState = "character_state";
         public new static readonly StringName ActorPosition = "actor_position";
-        public new static readonly StringName ActorScale = "actor_scale";
-        public new static readonly StringName ActorMirror = "actor_mirror";
     }
 
     public new string CharacterName
@@ -76,15 +74,4 @@ public partial class DialogueActor : Resource
         set => _source.Set(GDScriptPropertyName.ActorPosition, value);
     }
 
-    public new Vector2 ActorScale
-    {
-        get => _source.Get(GDScriptPropertyName.ActorScale).As<Vector2>();
-        set => _source.Set(GDScriptPropertyName.ActorScale, value);
-    }
-
-    public new bool ActorMirror
-    {
-        get => _source.Get(GDScriptPropertyName.ActorMirror).As<bool>();
-        set => _source.Set(GDScriptPropertyName.ActorMirror, value);
-    }
 }

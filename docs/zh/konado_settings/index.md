@@ -1,5 +1,5 @@
 ---
-title: Konado设置系统
+title: 设置系统
 order: 5
 ---
 

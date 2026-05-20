@@ -19,7 +19,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Konado Project"
-config/description="Konado is an open-source framework for creating visual novels with the Godot Engine."
+config/description="Konado is a dialogue creation toolkit for the Godot Engine, with templates and a dialogue manager to help you quickly build Visual Novels, Gal Games, RPGs and other story‑driven projects."
 config/version="2.4"
 run/main_scene="uid://bcl2e6o0kb5dm"
 config/features=PackedStringArray("4.6", "Forward Plus")
@@ -38,7 +38,7 @@ KND_WebTool="*uid://b4rup11rlc0uk"
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/stretch/mode="canvas_items"
+window/stretch/mode="viewport"
 
 [dotnet]
 
@@ -51,7 +51,7 @@ enabled=PackedStringArray("res://addons/konado/plugin.cfg", "res://addons/konado
 [gui]
 
 theme/custom="uid://cao2ht3baecs8"
-theme/custom_font="uid://bvv7q2l5vr5lg"
+theme/custom_font="uid://dihv3p6n7pp2e"
 
 [internationalization]
 

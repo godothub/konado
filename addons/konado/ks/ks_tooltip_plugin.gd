@@ -13,7 +13,7 @@ func _make_tooltip_for_path(path: String, metadata: Dictionary, base: Control) -
 		
 		# 显示文件类型信息
 		var type_label = Label.new()
-		type_label.text = "KS脚本文件"
+		type_label.text = "Konado Script"
 		vbox.add_child(type_label)
 		
 		# 获取并显示文件行数

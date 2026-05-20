@@ -1,6 +1,6 @@
 ---
 title: 使用API
-order: 3
+order: 2
 ---
 
 # Konado Settings API 文档

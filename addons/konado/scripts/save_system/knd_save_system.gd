@@ -411,20 +411,10 @@ func _capture_actor_state() -> Dictionary:
 			var actor_node = acting_interface.get_chara_node(actor_id)
 			
 			if actor_node:
-				# 获取v_character_position属性
-				var pos_v = 0
-				# 直接访问属性，GDScript中访问不存在的属性会返回null
-				# 使用安全的方式获取属性值
-				var pos_value = actor_node.v_character_position
-				if pos_value != null:
-					pos_v = pos_value
-				
 				var actor_state = {
 					"id": actor_id,
 					"h_division": actor_data.get("h_division", 6),
-					"v_division": actor_data.get("v_division", 6),
 					"pos_h": actor_data.get("pos", 0),
-					"pos_v": pos_v,
 					"state": actor_data.get("state", ""),
 					"c_scale": actor_data.get("c_scale", 1.0),
 					"mirror": actor_data.get("mirror", false)
@@ -479,13 +469,9 @@ func _restore_actor_state(state: Dictionary) -> void:
 						acting_interface.create_new_character(
 							actor_id,
 							actor_state.get("h_division", 6),
-							actor_state.get("v_division", 6),
 							actor_state.get("pos_h", 0),
-							actor_state.get("pos_v", 0),
 							state_name,
-							state_tex,
-							actor_state.get("c_scale", 1.0),
-							actor_state.get("mirror", false)
+							state_tex
 						)
 						
 						# 等待一帧，确保演员节点能够正确创建

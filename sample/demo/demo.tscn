@@ -1,32 +1,12 @@
 [gd_scene format=3 uid="uid://bcl2e6o0kb5dm"]
 
-[ext_resource type="PackedScene" uid="uid://bj8ynu8013j4j" path="res://addons/konado/template/konado_dialogue.tscn" id="1_57pxw"]
 [ext_resource type="Script" uid="uid://ct7rfs05wpar0" path="res://sample/demo/demo.gd" id="1_sgljs"]
 [ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/new_resource.tres" id="3_c17kf"]
 [ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo_01.ks" id="4_dv03n"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/bg_list.tres" id="4_qcbmp"]
 [ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/bgm_list.tres" id="5_qcbmp"]
-[ext_resource type="Script" uid="uid://uur73dv6qen8" path="res://addons/konado/scripts/audio/voice/knd_voice_list.gd" id="6_3bwhi"]
-[ext_resource type="Script" uid="uid://i3l661i8g2yy" path="res://addons/konado/scripts/audio/voice/knd_voice.gd" id="7_grqbd"]
-[ext_resource type="AudioStream" uid="uid://d1jj6rcfdvg8h" path="res://sample/demo/voice/你好欢迎来到我们的咖啡馆.wav" id="8_sgljs"]
-[ext_resource type="AudioStream" uid="uid://dvs2tjb1jrhr4" path="res://sample/demo/voice/今天想喝点什么.wav" id="9_grqbd"]
-
-[sub_resource type="Resource" id="Resource_dv03n"]
-script = ExtResource("7_grqbd")
-voice_name = "voice_01"
-voice = ExtResource("8_sgljs")
-metadata/_custom_type_script = "uid://i3l661i8g2yy"
-
-[sub_resource type="Resource" id="Resource_sgljs"]
-script = ExtResource("7_grqbd")
-voice_name = "voice_02"
-voice = ExtResource("9_grqbd")
-metadata/_custom_type_script = "uid://i3l661i8g2yy"
-
-[sub_resource type="Resource" id="Resource_nuu33"]
-script = ExtResource("6_3bwhi")
-voices = Array[ExtResource("7_grqbd")]([SubResource("Resource_dv03n"), SubResource("Resource_sgljs")])
-metadata/_custom_type_script = "uid://uur73dv6qen8"
+[ext_resource type="PackedScene" uid="uid://ci5v2a2rbkm7w" path="res://addons/konado/template/konado_dialogue_middle.tscn" id="11_dv03n"]
+[ext_resource type="PackedScene" uid="uid://buq324t8ugy0q" path="res://addons/konado/template/konado_dialogue_left.tscn" id="12_nuu33"]
 
 [node name="Demo" type="Control" unique_id=1757308143 node_paths=PackedStringArray("dialogue_manager")]
 layout_mode = 3
@@ -36,12 +16,19 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_sgljs")
-dialogue_manager = NodePath("KonadoDialogueManager")
+dialogue_manager = NodePath("KonadoDialogueLeft")
 
-[node name="KonadoDialogueManager" parent="." unique_id=1487339260 instance=ExtResource("1_57pxw")]
+[node name="KonadoDialogueLeft" parent="." unique_id=1487339260 instance=ExtResource("12_nuu33")]
 layout_mode = 1
 start_dialogue_shot = ExtResource("4_dv03n")
 chara_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
 bgm_list = ExtResource("5_qcbmp")
-voice_list = SubResource("Resource_nuu33")
+
+[node name="KonadoDialogueMiddle" parent="." unique_id=1111480236 instance=ExtResource("11_dv03n")]
+visible = false
+layout_mode = 1
+start_dialogue_shot = ExtResource("4_dv03n")
+chara_list = ExtResource("3_c17kf")
+background_list = ExtResource("4_qcbmp")
+bgm_list = ExtResource("5_qcbmp")

@@ -14,6 +14,18 @@ Konado.NET 是 Konado 对话系统的 C# API 扩展，通过 Konado.NET，开发
 
 ## 使用方法
 
+### 非.NET 项目
+
+如果在非.NET 项目中使用 Konado .NET API，会遇到如下报错，这是正常现象：
+```
+ ERROR: core/io/resource_loader.cpp:568 - Condition "local_path.is_empty()" is true. Returning: Ref<ResourceLoader::LoadToken>()
+  ERROR: Failed to create an autoload, can't load from UID or path: uid://ptylvcqylq7j.
+  ERROR: editor/settings/editor_autoload_settings.cpp:571 - Condition "!info->node" is true. Continuing.
+
+```
+
+这个问题不会影响 Konado 基础功能的使用，但无法使用 Konado .NET API。
+
 ### 启用插件
 
 

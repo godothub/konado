@@ -54,7 +54,7 @@ export default defineConfig({
         icon:
         {
           svg: '<svg t="1752549910319" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4388" width="200" height="200"><path d="M512 512m-512 0a512 512 0 1 0 1024 0 512 512 0 1 0-1024 0Z" fill="#FFAD16" p-id="4389"></path><path d="M500.053333 571.733333s-8.533333-25.6-8.533333-35.84v-5.12c0-58.026667 46.08-105.813333 100.693333-105.813333 27.306667 0 52.906667 5.12 71.68 25.6 13.653333-15.36 32.426667-22.186667 52.906667-23.893333-5.12-81.92-69.973333-153.6-150.186667-153.6-40.96 0-80.213333 17.066667-107.52 47.786666C431.786667 290.133333 392.533333 273.066667 351.573333 273.066667c-83.626667 0-150.186667 69.973333-150.186666 155.306667v8.533334c0 15.36 3.413333 32.426667 10.24 49.493333v1.706667c46.08 109.226667 221.866667 237.226667 230.4 242.346666 5.12 3.413333 10.24 5.12 15.36 5.12 5.12 0 11.946667-1.706667 15.36-5.12 3.413333-3.413333 39.253333-27.306667 88.746666-69.973333-27.306667-25.6-49.493333-58.026667-61.44-88.746667z m0 0" fill="#FFFFFF" p-id="4390"></path><path d="M815.786667 539.306667c0-49.493333-39.253333-88.746667-85.333334-88.746667-23.893333 0-46.08 10.24-61.44 27.306667-15.36-17.066667-37.546667-27.306667-61.44-27.306667-47.786667 0-85.333333 40.96-85.333333 88.746667v6.826666c0 8.533333 1.706667 18.773333 6.826667 29.013334v1.706666c25.6 63.146667 128 134.826667 131.413333 138.24 3.413333 1.706667 5.12 3.413333 8.533333 3.413334s6.826667-1.706667 8.533334-3.413334c3.413333-3.413333 90.453333-64.853333 124.586666-122.88 1.706667-1.706667 1.706667-3.413333 3.413334-5.12v-1.706666c1.706667-3.413333 3.413333-8.533333 5.12-11.946667 3.413333-8.533333 5.12-17.066667 5.12-25.6V546.133333v-6.826666z m0 0" fill="#FFFFFF" p-id="4391"></path></svg>'
-        }, link: 'https://afdian.tv/item/52230b2860a011f083ef52540025c377'
+        }, link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377'
       }
     ],
     footer: {
@@ -104,7 +104,7 @@ export default defineConfig({
           { text: 'Godot Hub', link: 'https://godothub.com' },
           { text: '查看文档', link: '/zh/tutorial/install' },
           { text: '下载插件', link: 'https://github.com/godothub/konado/releases/latest' },
-          { text: '赞助我们', link: 'https://afdian.tv/item/52230b2860a011f083ef52540025c377' }
+          { text: '赞助我们', link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377' }
         ],
         sidebar: genZhSidebar(docsRoot)
       }
@@ -149,7 +149,7 @@ export default defineConfig({
           { text: 'Godot Hub', link: 'https://godothub.com' },
           { text: '查看文檔', link: '/tc/tutorial/install' },
           { text: '下載插件', link: 'https://github.com/godothub/konado/releases/latest' },
-          { text: '贊助我們', link: 'https://afdian.tv/item/52230b2860a011f083ef52540025c377' }
+          { text: '贊助我們', link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377' }
         ],
         sidebar: genTcSidebar(docsRoot)
       }
@@ -169,7 +169,7 @@ export default defineConfig({
           { text: 'Godot Hub', link: 'https://godothub.com' },
           { text: 'Documentation', link: '/en/tutorial/install' },
           { text: 'Download Plugin', link: 'https://github.com/godothub/konado/releases/latest' },
-          { text: 'Sponsor Us', link: 'https://afdian.tv/item/52230b2860a011f083ef52540025c377' }
+          { text: 'Sponsor Us', link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377' }
         ],
         sidebar: genEnSidebar(docsRoot)
       }

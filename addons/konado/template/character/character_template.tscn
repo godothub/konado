@@ -2,27 +2,35 @@
 
 [ext_resource type="Script" uid="uid://mksyuojdc6ns" path="res://addons/konado/template/character/konado_actor.gd" id="1_gnto7"]
 
-[node name="character" type="Control" unique_id=1241920877 node_paths=PackedStringArray("texture_rect")]
+[node name="character" type="Control" unique_id=1241920877 node_paths=PackedStringArray("texture_rect", "slot")]
 layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gnto7")
-texture_rect = NodePath("TextureRect")
+texture_rect = NodePath("Slot/TextureRect")
+slot = NodePath("Slot")
 
-[node name="TextureRect" type="TextureRect" parent="." unique_id=1921303695]
+[node name="Slot" type="Control" parent="." unique_id=610558886]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 191.99939
+offset_right = 191.99805
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="Slot" unique_id=1921303695]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+anchors_preset = 15
+anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
-grow_vertical = 0
+grow_vertical = 2
 pivot_offset_ratio = Vector2(0.5, 1)
-stretch_mode = 3
+expand_mode = 3
+stretch_mode = 5

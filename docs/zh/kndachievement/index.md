@@ -1,5 +1,5 @@
 ---
-title: Konado成就系统
+title: 成就系统
 order: 6
 ---
 

@@ -59,10 +59,6 @@ enum Type {
 @export var character_state: String
 ## 创建角色的位置
 @export var actor_position: Vector2
-## 角色图片缩放
-@export var actor_scale: float
-## 演员立绘水平镜像翻转
-@export var actor_mirror: bool
 
 ## 隐藏的角色
 @export var exit_actor: String

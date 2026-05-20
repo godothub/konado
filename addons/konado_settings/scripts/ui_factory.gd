@@ -34,8 +34,6 @@ static func create_control(cat_id: String, item: KND_SettingItem, callback: Call
 
 	return row
 
-# ── 私有辅助方法 ──────────────────────────────────────────
-
 ## 添加滑块控件
 ## @param row: 容器
 ## @param cat_id: 分类ID
@@ -48,6 +46,7 @@ static func _add_slider(row: HBoxContainer, cat_id: String, item: KND_SettingIte
 	slider.step = item.step
 	slider.value = _current(cat_id, item)
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	slider.custom_minimum_size.x = 200
 
 	var value_label := Label.new()
