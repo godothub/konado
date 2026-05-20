@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bexeemifwqjqg"
-path="res://.godot/imported/屏幕截图 2026-05-16 225346.png-28122272ba204bf10e95d520a724d997.ctex"
+uid="uid://bja8r507vmqno"
+path="res://.godot/imported/portrait-template-example.png-08e33ccb78308d3767041968ed413fe0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/zh/tutorial/屏幕截图 2026-05-16 225346.png"
-dest_files=["res://.godot/imported/屏幕截图 2026-05-16 225346.png-28122272ba204bf10e95d520a724d997.ctex"]
+source_file="res://docs/zh/tutorial/portrait-template-example.png"
+dest_files=["res://.godot/imported/portrait-template-example.png-08e33ccb78308d3767041968ed413fe0.ctex"]
 
 [params]
 

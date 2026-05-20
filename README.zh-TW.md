@@ -30,12 +30,12 @@ Konado 是 Godot 引擎的對話創建工具包，提供模板和對話管理器
 
 ## 快速入門
 
-請參閱 [快速入門](https://godothub.com/oss/konado/tutorial/install.html) 文件，瞭解如何快速開始使用 Konado。
+請參閱 [快速入門](https://godothub.com/oss/konado/tc/tutorial/install.html) 文件，瞭解如何快速開始使用 Konado。
 
 
 ## 文件
 
-歡迎造訪我們的專案網站：https://godothub.com/oss/konado 取得更詳盡的文件與教學。
+歡迎造訪我們的專案網站：https://godothub.com/oss/konado/tc/ 取得更詳盡的文件與教學。
 
 ## 社群
 

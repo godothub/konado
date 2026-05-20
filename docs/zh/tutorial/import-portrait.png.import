@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drbcgq2cgh45w"
-path="res://.godot/imported/导入立绘.png-9ce6c7522401ef9fef484c77aa34e7df.ctex"
+path="res://.godot/imported/import-portrait.png-9ce6c7522401ef9fef484c77aa34e7df.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/zh/tutorial/导入立绘.png"
-dest_files=["res://.godot/imported/导入立绘.png-9ce6c7522401ef9fef484c77aa34e7df.ctex"]
+source_file="res://docs/zh/tutorial/import-portrait.png"
+dest_files=["res://.godot/imported/import-portrait.png-9ce6c7522401ef9fef484c77aa34e7df.ctex"]
 
 [params]
 

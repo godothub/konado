@@ -30,12 +30,12 @@ Konado는 Godot Engine용 대화 생성 도구킷으로, 템플릿과 대화 관
 
 ## 빠른 시작
 
-[빠른 시작 가이드](https://godothub.com/oss/konado/tutorial/install.html)를 따라 몇 분 만에 Konado를 설정하고 사용하기 시작하세요.
+[빠른 시작 가이드](https://godothub.com/oss/konado/en/tutorial/install.html)를 따라 몇 분 만에 Konado를 설정하고 사용하기 시작하세요.
 
 
 ## 문서
 
-종합 가이드, API 참조 및 고급 튜토리얼을 보려면 공식 프로젝트 웹사이트를 방문하세요: https://godothub.com/oss/konado
+종합 가이드, API 참조 및 고급 튜토리얼을 보려면 공식 프로젝트 웹사이트를 방문하세요: https://godothub.com/oss/konado/en/
 
 ## 커뮤니티
 

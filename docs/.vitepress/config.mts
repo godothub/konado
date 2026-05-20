@@ -1,8 +1,9 @@
 import { defineConfig } from 'vitepress'
 import { MermaidMarkdown, MermaidPlugin } from 'vitepress-plugin-mermaid'
-import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { genZhSidebar, genEnSidebar, genTcSidebar } from './genSidebar'
+import { bbcodeLanguage } from './bbcodeLanguage'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const docsRoot = resolve(__dirname, '..')
@@ -12,12 +13,16 @@ export default defineConfig({
   lastUpdated: true,
 
   markdown: {
+    languages: [bbcodeLanguage],
     config(md) {
       md.use(MermaidMarkdown)
     },
   },
   vite: {
     plugins: [MermaidPlugin()],
+    build: {
+      chunkSizeWarningLimit: 1000,
+    },
     optimizeDeps: {
       include: ['mermaid'],
     },
@@ -76,6 +81,7 @@ export default defineConfig({
           text: '在线编辑此页'
         },
         outlineTitle: '本页目录',
+        sidebarMenuLabel: '菜单',
         returnToTopLabel: '返回顶部',
         darkModeSwitchLabel: '深色模式',
         docFooter: {
@@ -121,6 +127,7 @@ export default defineConfig({
           text: '在線編輯此頁'
         },
         outlineTitle: '本頁目錄',
+        sidebarMenuLabel: '選單',
         returnToTopLabel: '返回頂部',
         darkModeSwitchLabel: '深色模式',
         docFooter: {

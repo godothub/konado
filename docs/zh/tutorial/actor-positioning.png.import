@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cw0cs7l8jy2av"
-path="res://.godot/imported/演员定位.png-c5ffc24268537bfc524ec74cc66ae993.ctex"
+path="res://.godot/imported/actor-positioning.png-c5ffc24268537bfc524ec74cc66ae993.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/zh/tutorial/演员定位.png"
-dest_files=["res://.godot/imported/演员定位.png-c5ffc24268537bfc524ec74cc66ae993.ctex"]
+source_file="res://docs/zh/tutorial/actor-positioning.png"
+dest_files=["res://.godot/imported/actor-positioning.png-c5ffc24268537bfc524ec74cc66ae993.ctex"]
 
 [params]
 

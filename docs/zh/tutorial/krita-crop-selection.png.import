@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfwfn2ucomsp3"
-path="res://.godot/imported/屏幕截图 2026-05-16 225238.png-59f6908f543e5dba05dbbfe8f675d93c.ctex"
+uid="uid://bexeemifwqjqg"
+path="res://.godot/imported/krita-crop-selection.png-28122272ba204bf10e95d520a724d997.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/zh/tutorial/屏幕截图 2026-05-16 225238.png"
-dest_files=["res://.godot/imported/屏幕截图 2026-05-16 225238.png-59f6908f543e5dba05dbbfe8f675d93c.ctex"]
+source_file="res://docs/zh/tutorial/krita-crop-selection.png"
+dest_files=["res://.godot/imported/krita-crop-selection.png-28122272ba204bf10e95d520a724d997.ctex"]
 
 [params]
 
