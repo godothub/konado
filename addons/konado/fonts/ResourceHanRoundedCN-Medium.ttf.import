@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://dihv3p6n7pp2e"
-path="res://.godot/imported/ResourceHanRoundedCN-Medium.ttf-3d29d0b07cfc1bbcc7071df5f5cfb58e.fontdata"
+path="res://.godot/imported/ResourceHanRoundedCN-Medium.ttf-7db5fb6eb7da6769e6172fa56f3f448d.fontdata"
 
 [deps]
 
-source_file="res://fonts/ResourceHanRoundedCN-Medium.ttf"
-dest_files=["res://.godot/imported/ResourceHanRoundedCN-Medium.ttf-3d29d0b07cfc1bbcc7071df5f5cfb58e.fontdata"]
+source_file="res://addons/konado/fonts/ResourceHanRoundedCN-Medium.ttf"
+dest_files=["res://.godot/imported/ResourceHanRoundedCN-Medium.ttf-7db5fb6eb7da6769e6172fa56f3f448d.fontdata"]
 
 [params]
 

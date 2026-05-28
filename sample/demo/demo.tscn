@@ -21,9 +21,6 @@ dialogue_manager = NodePath("KonadoDialogueLeft")
 [node name="KonadoDialogueLeft" parent="." unique_id=1487339260 instance=ExtResource("12_nuu33")]
 layout_mode = 1
 start_dialogue_shot = ExtResource("4_dv03n")
-chara_list = ExtResource("3_c17kf")
-background_list = ExtResource("4_qcbmp")
-bgm_list = ExtResource("5_qcbmp")
 
 [node name="KonadoDialogueMiddle" parent="." unique_id=1111480236 instance=ExtResource("11_dv03n")]
 visible = false

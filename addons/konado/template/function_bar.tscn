@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://bct4meesf6qf0"]
+
+[sub_resource type="Gradient" id="Gradient_6xj1n"]
+offsets = PackedFloat32Array(0, 0.4)
+colors = PackedColorArray(0, 0, 0, 0, 0, 0, 0, 0.5647059)
+metadata/_snap_enabled = true
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
+gradient = SubResource("Gradient_6xj1n")
+
+[node name="FunctionBar" type="TextureRect" unique_id=934316543]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -502.0
+offset_bottom = 40.0
+grow_horizontal = 0
+texture = SubResource("GradientTexture1D_yt2oi")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=390120427]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="Save" type="Button" parent="HBoxContainer" unique_id=678772973]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+text = "存档"
+flat = true
+
+[node name="AutoPlay" type="Button" parent="HBoxContainer" unique_id=2033628450]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+toggle_mode = true
+text = "自动播放"
+flat = true
+
+[node name="Achievement" type="Button" parent="HBoxContainer" unique_id=525001505]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+text = "成就"
+flat = true

@@ -280,6 +280,8 @@ func get_current_content() -> String:
 	return code_editor.text
 
 func has_unsaved_changes() -> bool:
+	if current_file_path.is_empty() :
+		return false
 	return is_modified
 
 func update_editor_state() -> void:
@@ -361,10 +363,6 @@ func reset_editor_state() -> void:
 	call_deferred("update_editor_state")
 	
 func _input(event: InputEvent) -> void:
-	if not Engine.is_editor_hint():
-		return
 	if event is InputEventKey and event.ctrl_pressed and event.keycode == KEY_S and event.pressed:
 		if has_unsaved_changes():
-			save_file()
-		if current_file_path.is_empty() == false:
 			save_file()

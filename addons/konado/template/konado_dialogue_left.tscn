@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://buq324t8ugy0q"]
 
 [ext_resource type="Theme" uid="uid://6o5ku57ox1bu" path="res://addons/konado/template/theme/left_theme.tres" id="1_m70cm"]
+[ext_resource type="Script" uid="uid://b3xcpatqnlrg" path="res://addons/konado/scripts/knd_settings_bridge.gd" id="2_m70cm"]
 [ext_resource type="Script" uid="uid://dpo124xwpder5" path="res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd" id="2_tn0i2"]
 [ext_resource type="Script" uid="uid://cyoedi0x84dxy" path="res://addons/konado/scripts/act/knd_acting_interface.gd" id="3_j3lp8"]
 [ext_resource type="PackedScene" uid="uid://b3wibk1ya0b6j" path="res://addons/konado/template/knd_dialogue_box_left.tscn" id="4_m70cm"]
@@ -21,7 +22,7 @@ metadata/_snap_enabled = true
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_yt2oi"]
 gradient = SubResource("Gradient_6xj1n")
 
-[node name="KonadoDialogueLeft" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "_autoPlayButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system")]
+[node name="KonadoDialogueLeft" type="Control" unique_id=1487339260 node_paths=PackedStringArray("_konado_choice_interface", "_konado_dialogue_box", "_acting_interface", "_audio_interface", "_autoPlayButton", "_settingsButton", "error_tooltip_panel", "error_tooltip_label", "error_skip_btn", "save_system", "_settings_bridge")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -35,11 +36,12 @@ _konado_dialogue_box = NodePath("KonadoUI/DialogueInterface/KonadoDialogueBox")
 _acting_interface = NodePath("KonadoUI/ActingInterface")
 _audio_interface = NodePath("KonadoAudioInterface")
 _autoPlayButton = NodePath("KonadoUI/ColorRect/HBoxContainer/AutoPlay")
+_settingsButton = NodePath("KonadoUI/ColorRect/HBoxContainer/Settings")
 error_tooltip_panel = NodePath("KonadoErrorToolTip")
 error_tooltip_label = NodePath("KonadoErrorToolTip/MarginContainer/ErrorText")
 error_skip_btn = NodePath("KonadoErrorToolTip/Skip")
-enable_web_devtool = true
 save_system = NodePath("KND_SaveSystem")
+_settings_bridge = NodePath("KND_SettingsBridge")
 
 [node name="KonadoUI" type="Control" parent="." unique_id=363853147]
 layout_mode = 1
@@ -145,6 +147,12 @@ theme_type_variation = &"FlatButton"
 text = "成就"
 flat = true
 
+[node name="Settings" type="Button" parent="KonadoUI/ColorRect/HBoxContainer" unique_id=160303829]
+layout_mode = 2
+theme_type_variation = &"FlatButton"
+text = "设置"
+flat = true
+
 [node name="SaveSystemUI" type="Control" parent="KonadoUI" unique_id=14919090 node_paths=PackedStringArray("root_container", "save_system")]
 visible = false
 layout_mode = 1
@@ -194,11 +202,12 @@ theme_type_variation = &"FlatButton"
 text = "关闭界面"
 flat = true
 
-[node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847 node_paths=PackedStringArray("bgm_player", "voice_player", "sound_effect_player")]
+[node name="KonadoAudioInterface" type="Node2D" parent="." unique_id=1896821847 node_paths=PackedStringArray("bgm_player", "voice_player", "sound_effect_player", "_settings_bridge")]
 script = ExtResource("7_c8nf7")
 bgm_player = NodePath("BgmPlayer")
 voice_player = NodePath("VoicePlayer")
 sound_effect_player = NodePath("SoundEffectPlayer")
+_settings_bridge = NodePath("../KND_SettingsBridge")
 
 [node name="BgmPlayer" type="AudioStreamPlayer" parent="KonadoAudioInterface" unique_id=1295733151]
 
@@ -253,6 +262,10 @@ text = "Skip this error..."
 script = ExtResource("8_iq8kq")
 enable_auto_save = false
 metadata/_custom_type_script = "uid://dusoj8pkl7ecg"
+
+[node name="KND_SettingsBridge" type="Node" parent="." unique_id=601812021]
+script = ExtResource("2_m70cm")
+metadata/_custom_type_script = "uid://b3xcpatqnlrg"
 
 [connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Save" to="KonadoUI/SaveSystemUI" method="open_save_ui"]
 [connection signal="pressed" from="KonadoUI/ColorRect/HBoxContainer/Achievement" to="." method="_on_achievement_pressed"]

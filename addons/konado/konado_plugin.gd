@@ -7,9 +7,8 @@ const VERSION: String = "2.4.0"
 const CODENAME: String = "Cannoli"
 
 ## 自定义EditorImportPlugin脚本
-const KS_IMPORTER_SCRIPT := preload("res://addons/konado/importer/konado_importer.gd")
-const KDIC_IMPORTER_SCRIPT := preload("res://addons/konado/editor/ks_csv_importer/ks_csv_importer.gd")
-
+const KS_IMPORTER_SCRIPT := preload("uid://rp35gse7j4sv")
+const KDIC_IMPORTER_SCRIPT := preload("uid://b7a8r75oh165c")
 
 ## 翻译文件路径
 const TRANSLATION_PATHS: PackedStringArray = [
@@ -31,42 +30,34 @@ var filesystem_dock: FileSystemDock
 var ks_tooltip_plugin: EditorResourceTooltipPlugin
 
 var ks_editor: KsEditorWindow
-var graph_editor: KndGraphEdit
+var ks_dock :EditorDock
+
 ## 追踪当前活跃的编辑器: "ks" 或 "graph"
 var _active_editor: String = "ks"
 
 var inspector_plugin: EditorInspectorPlugin = null
 
-func _get_plugin_name() -> String:
-	return "Konado"
-	
-func _get_plugin_icon() -> Texture2D:
-	return null
-	
+
 func _has_main_screen() -> bool:
 	return true
 
 func _enter_tree() -> void:
 	_setup_import_plugins()
-
 	_print_loading_message()
 	
 	filesystem_dock = get_editor_interface().get_file_system_dock()
 	ks_tooltip_plugin = preload("res://addons/konado/ks/ks_tooltip_plugin.gd").new()
 	filesystem_dock.add_resource_tooltip_plugin(ks_tooltip_plugin)
 	
-
+	ks_dock = EditorDock.new()
+	ks_dock.title = "KonadoEdit"
+	# 4.5改用 EditorPlugin
+	#ks_dock.default_slot = EditorPlugin.DOCK_SLOT_BOTTOM
+	# 4.6以上改用 EditorDock
+	ks_dock.default_slot = EditorDock.DOCK_SLOT_BOTTOM
 	ks_editor = load("res://addons/konado/editor/ks_editor/ks_editor.tscn").instantiate() as KsEditorWindow
-	EditorInterface.get_editor_main_screen().add_child(ks_editor)
-	ks_editor.hide()
-
-	# 初始化节点图编辑器（独立于KS文本编辑器）
-	graph_editor = KndGraphEdit.new()
-	graph_editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	graph_editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	# 添加到编辑器主屏幕
-	EditorInterface.get_editor_main_screen().add_child(graph_editor)
-	graph_editor.hide()
+	ks_dock.add_child(ks_editor)
+	add_dock(ks_dock)
 
 	var inspector_plugin = preload("res://addons/konado/audioeffect/audioeffect_inspector_plugin.gd").new()
 	# add_inspector_plugin完成注册
@@ -74,18 +65,7 @@ func _enter_tree() -> void:
 	
 # 控制显示
 func _make_visible(visible: bool) -> void:
-	if visible:
-		if ks_editor:
-			if ks_editor.get_parent() is Window:
-				get_editor_interface().set_main_screen_editor("Script")
-				ks_editor.show()
-				ks_editor.get_parent().grab_focus()
-			else:
-				ks_editor.show()
-	else:
-		if ks_editor:
-			ks_editor.hide()
-
+	ks_dock.visible = visible
 
 func _exit_tree() -> void:
 	_cleanup_import_plugins()
@@ -93,12 +73,11 @@ func _exit_tree() -> void:
 	if filesystem_dock:
 		filesystem_dock.remove_resource_tooltip_plugin(ks_tooltip_plugin)
 		ks_tooltip_plugin = null
-		
-	if ks_editor:
-		EditorInterface.get_editor_main_screen().remove_child(ks_editor)
+	
+	if ks_dock:
+		remove_dock(ks_dock)
+		ks_dock.queue_free()
 
-	if graph_editor:
-		EditorInterface.get_editor_main_screen().remove_child(graph_editor)
 
 	if inspector_plugin != null:
 		remove_inspector_plugin(inspector_plugin)
@@ -117,7 +96,6 @@ func _edit(object: Object) -> void:
 		_active_editor = "ks"
 		ks_editor.edit(object.resource_path)
 		ks_editor.show()
-		graph_editor.hide()
 	
 	
 ## 设置导入插件

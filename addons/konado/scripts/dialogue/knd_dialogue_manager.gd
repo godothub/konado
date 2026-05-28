@@ -74,6 +74,9 @@ var _temp_variables: Dictionary = {}
 ## 自动播放按钮
 @export var _autoPlayButton: Button
 
+## 设置按钮
+@export var _settingsButton: Button
+
 ## 对话资源ID
 var _dialog_data_id: int = 0
 
@@ -133,11 +136,31 @@ func _current_dialogue() -> KND_Dialogue:
 ## 浏览器各种快捷键调试功能，Godot默认会拦截，如果需要在web调试请打开
 @export var enable_web_devtool: bool = false
 
+@export_category("System")
 ## 存档系统
 @export var save_system: KND_SaveSystem
 
 ## 成就系统单例引用
 var achievement_mgr: Node = null
+
+## 设置桥接器
+@export var _settings_bridge: KND_SettingsBridge
+
+
+## 设置变更处理
+func _on_setting_changed(category: String, key: String, value: Variant) -> void:
+	match category:
+		"text":
+			match key:
+				"text_speed":
+					_typing_interval = value
+				"auto_delay":
+					autoplayspeed = value
+				"auto_mode":
+					start_autoplay(value)
+		"audio":
+			# 音频设置变更由 KND_AudioInterface 处理
+			pass
 
 func _ready() -> void:
 	if check_visable:
@@ -174,6 +197,17 @@ func _ready() -> void:
 		_autoPlayButton.toggled.connect(start_autoplay)
 	else:
 		push_error("未指定 _autoPlayButton")
+		
+	# 如果有设置系统
+	if _settings_bridge:
+		_settings_bridge.setting_changed.connect(
+			_on_setting_changed
+		)
+		if _settingsButton:
+			_settingsButton.pressed.connect(
+				func():
+					_settings_bridge.show_settings_panel()
+					)
 	
 	# 设置存档系统的对话管理器引用
 	if save_system:
@@ -232,6 +266,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 
 	# 初始化各管理器
 	_acting_interface.delete_all_actor()
+	
 
 	justenter = true
 	dialogueState = DialogState.OFF
@@ -563,20 +598,17 @@ func _process(delta) -> void:
 ## 打字完成
 func isfinishtyping(wait_voice: bool) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
+	if _settings_bridge:
+		var auto = _settings_bridge.get_auto_mode()
+		await get_tree().create_timer(1).timeout
+		start_autoplay(auto)
 	# 如果自动播放还要检查配音是否播放完毕
 	if autoplay:
 		# 如果有配音等待配音播放完成
 		if wait_voice:
 			await _audio_interface.voice_finish_playing
 		else:
-			print("触发打字完成信号")
-			var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
-			if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
-				print("选项自动下一个")
-				await get_tree().create_timer(0.05).timeout
-				_process_next()
-			else:
-				await get_tree().create_timer(autoplayspeed).timeout
+			await get_tree().create_timer(autoplayspeed).timeout
 		_process_next()
 	else:
 		# 检查下一句是否是选项，如果是自动下一句

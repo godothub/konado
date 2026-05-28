@@ -20,6 +20,45 @@ signal voice_finish_playing
 ## 音效播放器
 @export var sound_effect_player: AudioStreamPlayer
 
+## 设置桥接器引用
+@export var _settings_bridge: KND_SettingsBridge
+
+## 缓存的音量值
+var _master_volume: float = 1.0
+var _music_volume: float = 0.8
+var _sfx_volume: float = 1.0
+var _voice_volume: float = 1.0
+
+
+## 从设置更新音量
+func _update_volume_from_settings() -> void:
+	if _settings_bridge == null:
+		return
+	
+	_master_volume = _settings_bridge.get_master_volume()
+	_music_volume = _settings_bridge.get_music_volume()
+	_sfx_volume = _settings_bridge.get_sfx_volume()
+	_voice_volume = _settings_bridge.get_voice_volume()
+	
+	# 应用音量
+	if bgm_player:
+		bgm_player.volume_db = linear_to_db(_master_volume * _music_volume)
+	if voice_player:
+		voice_player.volume_db = linear_to_db(_master_volume * _voice_volume)
+	if sound_effect_player:
+		sound_effect_player.volume_db = linear_to_db(_master_volume * _sfx_volume)
+
+## 设置变更处理
+func _on_setting_changed(category: String, key: String, value: Variant) -> void:
+	if category == "audio":
+		_update_volume_from_settings()
+
+## 将线性音量转换为分贝
+func linear_to_db(linear: float) -> float:
+	if linear <= 0.0:
+		return -80.0
+	return 20.0 * log(linear) / log(10.0)
+
 
 ## 播放BGM的方法（循环播放）
 func play_bgm(audio: AudioStream, audio_id: String) -> void:

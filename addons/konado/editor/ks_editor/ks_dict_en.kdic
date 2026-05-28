@@ -1,15 +1,25 @@
-Tag,Button Name,Button Icon,Insert Statement,Button Remarks
-Metadata,Shot ID,,shot_id <Shot Identifier>,Must be located in the first line of the file
-Dialogue,Dialogue,,"""Character ID"" ""Dialogue Content"" [Voice ID]",Character dialogue content
-Background,Background Switch,,background <Background Image Name> [Effect Type],Switch background image, optional effects
-Character,Actor Display,,actor show <Character Name> <Character State> at <X Coordinate> <Y Coordinate> scale <Scale Ratio> [mirror],Display character on the screen
-Character,Actor Exit,,actor exit <Character Name>,Character exits the screen
-Character,State Change,,actor change <Character Name> <New State>,Change character state
-Character,Move Character,,actor move <Character Name> <Target X Coordinate> <Target Y Coordinate>,Move character position
-Audio,Play BGM,,play bgm <BGM Name>,Play background music
-Audio,Play SFX,,play sfx <Sound Effect Name>,Play sound effect
-Audio,Stop BGM,,stop bgm,Stop background music
-Branch,Option Branch,,choice "Option Text 1" <Jump Tag 1> "Option Text 2" <Jump Tag 2> ...,Create option branch
-Branch,Branch Tag,,branch <Branch Tag Name>,Define branch tag
-Process,Shot Jump,,jump <Target Shot ID>,Jump to other shots
-Special,End Marker,,end,Scene end marker
+"标签","按钮名称","按钮图标","插入语句","按钮备注"
+"Dialogue","Dialogue","","""Character Name"" ""Dialogue Content"" [Voice ID]","Character dialogue content"
+"Background","Background Switch","","background <Background Image Name> [Effect Type]","Switch background image, optional effect"
+"Character","Actor Show","","actor show <Character Name> <Character State> at <Target Position>","Display character on screen"
+"Character","Actor Exit","","actor exit <Character Name>","Remove character from screen"
+"Character","State Change","","actor change <Character Name> <New State>","Change character state"
+"Character","Move Character","","actor move <Character Name> <Target Position>","Move character position"
+"Audio","Play BGM","","play bgm <BGM Name>","Play background music"
+"Audio","Play SFX","","play sfx <SFX Name>","Play sound effect"
+"Audio","Stop BGM","","stop bgm","Stop background music"
+"Variable","Set Variable","","set <Variable Name> = <Value>","Set persistent variable (%) or temporary variable ($) value"
+"Variable","Variable Addition","","add <Variable Name> <Value>","Increase variable value (numeric addition or string concatenation)"
+"Variable","Variable Subtraction","","sub <Variable Name> <Value>","Decrease variable value"
+"Variable","Variable Multiplication","","mul <Variable Name> <Value>","Multiply variable value by given value"
+"Variable","Variable Division","","div <Variable Name> <Value>","Divide variable value by given value (error if divisor is zero)"
+"Variable","Variable Reference","","%<Variable Name> or $<Variable Name>","Insert variable value in dialogue text, replaced at runtime"
+"Condition","Conditional Judgment","","if <Variable Name> <Operator> <Value>:","Start conditional judgment, supports ==, !=, >, <, >=, <="
+"Condition","Else","","else:","Execute when condition is not met (optional)"
+"Condition","End Condition","","endif","End the current conditional block"
+"Branch","Choice Branch","","choice ""Option Content"" -> Branch Name","Create option branch"
+"Branch","Branch Label","","branch <Branch Label Name>","Define branch label"
+"Signal","Send Signal","","signal <Custom Signal Command>","Send signal"
+"Flow","Camera Jump","","jump <Target Camera ID>","Jump to another camera"
+"Flow","Branch Jump","","jump_branch <Branch Label Name>","Jump to specified branch label within branch block"
+"Flow","End Marker","","end","Dialogue end marker"

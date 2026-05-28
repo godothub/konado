@@ -1,13 +1,10 @@
 [gd_scene format=3 uid="uid://x8t7cxfhviko"]
 
+[ext_resource type="Theme" uid="uid://cao2ht3baecs8" path="res://addons/konado/editor/theme/dark_theme.tres" id="1_jr2qt"]
 [ext_resource type="Script" uid="uid://c2anqfrl1qe27" path="res://addons/konado/editor/ks_editor/ks_editor.gd" id="1_qu5wb"]
 [ext_resource type="Script" uid="uid://d1vqgmq6wa33e" path="res://addons/konado/editor/ks_editor/ks_editor_window.gd" id="1_rnpir"]
 [ext_resource type="Script" uid="uid://byqad5mu76fj5" path="res://addons/konado/editor/ks_editor/konado_code_edit.gd" id="3_43nnm"]
 [ext_resource type="SyntaxHighlighter" uid="uid://dj1uoip1wfxuw" path="res://addons/konado/editor/ks_editor/highlighter.tres" id="3_yf0y7"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rnpir"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yf0y7"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ggagf"]
 bg_color = Color(0.0846, 0.0873, 0.09, 1)
@@ -15,6 +12,7 @@ corner_radius_top_right = 15
 corner_radius_bottom_right = 15
 
 [node name="KonadoEditorWindow" type="Panel" unique_id=1539945055]
+custom_minimum_size = Vector2(0, 300)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -22,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_type_variation = &"WindowPanel"
+theme = ExtResource("1_jr2qt")
 script = ExtResource("1_rnpir")
 
 [node name="ks_editor_bar" type="Node" parent="." unique_id=1883942368]
@@ -40,7 +38,9 @@ vertical = true
 [node name="MarginContainer" type="MarginContainer" parent="dock" unique_id=600425176]
 layout_mode = 2
 theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 6
 
 [node name="BoxContainer" type="BoxContainer" parent="dock/MarginContainer" unique_id=1656682476]
 custom_minimum_size = Vector2(0, 42)
@@ -48,48 +48,37 @@ layout_mode = 2
 
 [node name="New" type="Button" parent="dock/MarginContainer/BoxContainer" unique_id=1629303952]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("StyleBoxEmpty_rnpir")
-theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_yf0y7")
 text = "新建"
 language = "en"
 
 [node name="Open" type="Button" parent="dock/MarginContainer/BoxContainer" unique_id=1353499193]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("StyleBoxEmpty_rnpir")
-theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_yf0y7")
 text = "打开"
 language = "en"
 
 [node name="Save" type="Button" parent="dock/MarginContainer/BoxContainer" unique_id=1425691032]
 layout_mode = 2
 tooltip_text = "没有打开的文件"
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("StyleBoxEmpty_rnpir")
-theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_yf0y7")
 disabled = true
 text = "保存"
 
 [node name="Close" type="Button" parent="dock/MarginContainer/BoxContainer" unique_id=561398663]
 layout_mode = 2
 tooltip_text = "没有打开的文件"
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("StyleBoxEmpty_rnpir")
-theme_override_styles/normal_mirrored = SubResource("StyleBoxEmpty_yf0y7")
 disabled = true
 text = "关闭当前文件"
 
 [node name="FilePath" type="Label" parent="dock/MarginContainer/BoxContainer" unique_id=163678671]
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 size_flags_horizontal = 10
 theme_override_colors/font_color = Color(0.4857033, 0.4857036, 0.48570347, 1)
-theme_override_font_sizes/font_size = 24
 text = "未打开文件"
 
 [node name="DocsLinkButton" type="LinkButton" parent="dock/MarginContainer/BoxContainer" unique_id=1542129966]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+size_flags_horizontal = 4
+size_flags_vertical = 4
 text = "在线文档"
 uri = "https://godothub.com/oss/konado/"
 
@@ -116,7 +105,6 @@ grow_vertical = 2
 theme_override_colors/guide_color = Color(0, 0, 0, 0)
 theme_override_colors/relationship_line_color = Color(0, 0, 0, 0)
 allow_reselect = true
-hide_folding = true
 hide_root = true
 
 [node name="editor" type="MarginContainer" parent="dock/VBoxContainer2" unique_id=352193053]

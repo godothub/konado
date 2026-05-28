@@ -1,6 +1,6 @@
 [gd_resource type="Theme" format=3 uid="uid://6o5ku57ox1bu"]
 
-[ext_resource type="FontFile" uid="uid://dihv3p6n7pp2e" path="res://fonts/ResourceHanRoundedCN-Medium.ttf" id="1_ghhdk"]
+[ext_resource type="FontFile" uid="uid://dihv3p6n7pp2e" path="res://addons/konado/fonts/ResourceHanRoundedCN-Medium.ttf" id="1_ghhdk"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8p1pv"]
 content_margin_left = 10.0

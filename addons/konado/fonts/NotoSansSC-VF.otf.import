@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://bvv7q2l5vr5lg"
-path="res://.godot/imported/NotoSansSC-VF.otf-3ee81de05bd978872fd127a54d34c543.fontdata"
+path="res://.godot/imported/NotoSansSC-VF.otf-a9b8cee38e2d912c0625bdc40a44b364.fontdata"
 
 [deps]
 
-source_file="res://fonts/NotoSansSC-VF.otf"
-dest_files=["res://.godot/imported/NotoSansSC-VF.otf-3ee81de05bd978872fd127a54d34c543.fontdata"]
+source_file="res://addons/konado/fonts/NotoSansSC-VF.otf"
+dest_files=["res://.godot/imported/NotoSansSC-VF.otf-a9b8cee38e2d912c0625bdc40a44b364.fontdata"]
 
 [params]
 
@@ -16,7 +16,7 @@ Rendering=null
 antialiasing=1
 generate_mipmaps=false
 disable_embedded_bitmaps=true
-multichannel_signed_distance_field=false
+multichannel_signed_distance_field=true
 msdf_pixel_range=8
 msdf_size=48
 allow_system_fallback=true
@@ -30,7 +30,12 @@ Fallbacks=null
 fallbacks=[]
 Compress=null
 compress=true
-preload=[]
+preload=[{
+"chars": [],
+"glyphs": [],
+"name": "新建配置",
+"size": Vector2i(16, 0)
+}]
 language_support={}
 script_support={}
 opentype_features={}
