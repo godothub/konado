@@ -4,6 +4,7 @@ import path from 'path'
 interface ScanItem {
   text: string
   link?: string
+  dir?: string
   items?: ScanItem[]
   collapsed?: boolean
   order?: number
@@ -98,6 +99,7 @@ function scan(dirPath: string, relativePath: string): ScanItem[] {
 
       const group: ScanItem = {
         text: title,
+        dir: subRelative,
         collapsed: fm.sidebar_collapsed ?? true,
         order: fm.order !== undefined ? fm.order : 999,
       };
@@ -138,17 +140,13 @@ function buildLocaleSidebar(
     if (item.items) {
       // Try to find locale-specific group title from index.md
       let localeGroupText = item.text;
-      if (item.items.length > 0) {
-        // Derive dir from first child's link: /zh/script/background/background-switch → script/background
-        const firstChildLink = item.items[0].link;
-        if (firstChildLink) {
-          const dirRel = firstChildLink.replace(/^\/zh\//, '').replace(/\/[^/]+$/, '');
-          const localeIndex = path.join(docsRoot, localePrefix, dirRel, 'index.md');
-          if (fs.existsSync(localeIndex)) {
-            const localeFm = readFrontmatter(localeIndex);
-            const localeTitle = localeFm.title || getTitleFromFile(localeIndex);
-            if (localeTitle) localeGroupText = localeTitle;
-          }
+      if (item.dir) {
+        const dirRel = item.dir.replace(/^zh[\\/]/, '');
+        const localeIndex = path.join(docsRoot, localePrefix, dirRel, 'index.md');
+        if (fs.existsSync(localeIndex)) {
+          const localeFm = readFrontmatter(localeIndex);
+          const localeTitle = localeFm.title || getTitleFromFile(localeIndex);
+          if (localeTitle) localeGroupText = localeTitle;
         }
       }
       return {
@@ -196,4 +194,16 @@ export function genTcSidebar(docsRoot: string): SidebarItem[] {
   const zhPath = path.join(docsRoot, 'zh');
   const canonical = scan(zhPath, 'zh');
   return buildLocaleSidebar(canonical, zhPath, 'tc', docsRoot);
+}
+
+export function genJaSidebar(docsRoot: string): SidebarItem[] {
+  const zhPath = path.join(docsRoot, 'zh');
+  const canonical = scan(zhPath, 'zh');
+  return buildLocaleSidebar(canonical, zhPath, 'ja', docsRoot);
+}
+
+export function genKoSidebar(docsRoot: string): SidebarItem[] {
+  const zhPath = path.join(docsRoot, 'zh');
+  const canonical = scan(zhPath, 'zh');
+  return buildLocaleSidebar(canonical, zhPath, 'ko', docsRoot);
 }

@@ -17,7 +17,7 @@ jobs:
       has_new_commits: ${{ steps.check.outputs.has_new_commits }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           lfs: true
           fetch-depth: 0  # 拉取完整历史（定时触发需查Tag/Commit）
@@ -60,7 +60,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         lfs: true
         fetch-depth: 0
@@ -120,6 +120,23 @@ jobs:
         
         [preset.1.options]
         binary_format/embed_pck=true
+        
+        [preset.2]
+        name="Web"
+        platform="Web"
+        runnable=true
+        export_path="build/web/index.html"
+        
+        [preset.2.options]
+        
+        [preset.3]
+        name="Android"
+        platform="Android"
+        runnable=true
+        export_path="build/android/${{ env.EXPORT_NAME }}-android.apk"
+        
+        [preset.3.options]
+        architectures/arm64=true
         EOF
 
     - name: Build for Linux
@@ -135,6 +152,20 @@ jobs:
         EXPORT_DIR="$(readlink -f build)"
         cd ${{ env.PROJECT_PATH }}
         godot --headless --verbose --export-release "Windows Desktop" "$EXPORT_DIR/windows/${{ env.EXPORT_NAME }}-windows.exe"
+
+    - name: Build for Web
+      run: |
+        mkdir -v -p build/web
+        EXPORT_DIR="$(readlink -f build)"
+        cd ${{ env.PROJECT_PATH }}
+        godot --headless --verbose --export-release "Web" "$EXPORT_DIR/web/index.html"
+
+    - name: Build for Android
+      run: |
+        mkdir -v -p build/android
+        EXPORT_DIR="$(readlink -f build)"
+        cd ${{ env.PROJECT_PATH }}
+        godot --headless --verbose --export-debug "Android" "$EXPORT_DIR/android/${{ env.EXPORT_NAME }}-android.apk"
 
     - name: Create Plugin Zip
       run: |
@@ -161,6 +192,8 @@ jobs:
           build/plugins/${{ steps.version.outputs.plugin_dotnet_zip }}
           build/linux/${{ env.EXPORT_NAME }}-linux.x86_64
           build/windows/${{ env.EXPORT_NAME }}-windows.exe
+          build/web/
+          build/android/${{ env.EXPORT_NAME }}-android.apk
 
     # 清理旧的每日构建
     - name: Install GitHub CLI

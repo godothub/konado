@@ -7,6 +7,8 @@
 .vscode/
 .VSCodeCounter
 *.tmp
+docs/**/*.import
+docs/**/*.uid
 
 # Jetbrain IDE specific ignores
 .idea/

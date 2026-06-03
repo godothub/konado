@@ -248,6 +248,18 @@ func _post_process_shot(shot: KND_Shot, main_dialogues: Array[KND_Dialogue]) -> 
 					_scripts_warning(tmp_path, d.source_file_line,
 					"选项跳转标签 '%s' 未找到对应分支" % choice.next_id)
 
+	# 5.3 解析分支内选项的next_id（从tag名称转换为node_id）
+	for tag_name in tmp_branches:
+		var branch_dialogs: Array = tmp_branches[tag_name]
+		for d in branch_dialogs:
+			if d.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+				for choice in d.choices:
+					if tag_to_first_node_id.has(choice.next_id):
+						choice.next_id = tag_to_first_node_id[choice.next_id]
+					else:
+						_scripts_warning(tmp_path, d.source_file_line,
+						"选项跳转标签 '%s' 未找到对应分支" % choice.next_id)
+
 	# 5.5 解析jump_branch的next_id（从tag名称转换为node_id）
 	_resolve_jump_branch_targets(main_dialogues, tag_to_first_node_id)
 	for tag_name in tmp_branches:
@@ -762,26 +774,20 @@ func _parse_choice(line: String, dialog: KND_Dialogue) -> bool:
 		parts.append(raw_parts[i])
 		i += 1
 
-	if parts.size() % 2 != 0:
-		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每个选项必须包含文本和跳转标签，格式: choice \"文本\" -> 标签")
+	if parts.size() != 2:
+		_scripts_debug(tmp_path, tmp_original_line_number, "选项格式错误: 每行只能有一个选项，格式: choice \"文本\" -> 标签")
 		return false
 
-	for ic in range(0, parts.size(), 2):
-		var choice = KND_DialogueChoice.new()
-		choice.choice_text = parts[ic]
-		choice.next_id = parts[ic + 1]
-		dialog.choices.append(choice)
-
-	var choices_strs = ""
-	for choice in dialog.choices:
-		choices_strs += "\"" + choice.choice_text + "\" -> " + choice.next_id + "  "
+	var choice = KND_DialogueChoice.new()
+	choice.choice_text = parts[0]
+	choice.next_id = parts[1]
+	dialog.choices.append(choice)
 
 	var jump_tags = []
-	for choice in dialog.choices:
-		jump_tags.append(choice.next_id)
+	jump_tags.append(choice.next_id)
 	cur_tmp_option_lines[tmp_original_line_number] = jump_tags
 
-	_scripts_info(tmp_path, tmp_line_number + 1, "选项解析完成 选项数量: " + str(dialog.choices.size()) + "  选项: " + choices_strs)
+	_scripts_info(tmp_path, tmp_line_number + 1, "选项解析完成: \"" + choice.choice_text + "\" -> " + choice.next_id)
 	return true
 
 # 分支解析
@@ -822,6 +828,31 @@ func _parse_branch(line: String, dialog: KND_Dialogue) -> bool:
 			idx += 1
 			while idx < branch_block_lines.size() and branch_block_lines[idx].index <= consumed_until:
 				idx += 1
+			continue
+
+		if inner_line.begins_with("choice "):
+			var choice_dialog := KND_Dialogue.new()
+			choice_dialog.dialog_type = KND_Dialogue.Type.SHOW_CHOICE
+			choice_dialog.source_file_line = inner_line_num
+
+			while idx < branch_block_lines.size():
+				var cline_info = branch_block_lines[idx]
+				var cline = cline_info.line
+				if cline.is_empty() or cline.begins_with("#"):
+					idx += 1
+					continue
+				if not cline.begins_with("choice "):
+					break
+				if not _parse_single_choice_line(cline, choice_dialog):
+					_scripts_debug(tmp_path, cline_info.line_number, "分支内选项解析失败: %s" % cline)
+					return false
+				idx += 1
+
+			if choice_dialog.choices.size() == 0:
+				_scripts_debug(tmp_path, inner_line_num, "分支内选项行没有有效的选项")
+				return false
+
+			branch_dialogues.append(choice_dialog)
 			continue
 
 		var inner_dialog = parse_line(inner_line, inner_line_num, tmp_path, null)

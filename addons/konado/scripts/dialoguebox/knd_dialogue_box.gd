@@ -154,16 +154,29 @@ func hide_dialogue_box() -> void:
 	
 	# 创建新的透明度过渡动画
 	fade_tween = get_tree().create_tween()
-	# 设置动画曲线和缓动类型
 	fade_tween.set_trans(fade_trans_type)
 	fade_tween.set_ease(fade_ease_type)
-	# 过渡modulate的alpha值从当前值到0
+	
+	# 同时过渡三个节点的 modulate:a 从当前值到 0
 	fade_tween.tween_property(self, "modulate:a", 0.0, fade_duration)
-	# 动画结束后隐藏节点并发射隐藏完成信号
+	if character_name_label:
+		fade_tween.tween_property(character_name_label, "modulate:a", 0.0, fade_duration)
+	if dialogue_label:
+		fade_tween.tween_property(dialogue_label, "modulate:a", 0.0, fade_duration)
+	if typewriter_text:
+		fade_tween.tween_property(typewriter_text, "modulate:a", 0.0, fade_duration)
+	
+	# 动画结束后隐藏所有节点并重置透明度
 	fade_tween.finished.connect(func():
 		self.hide()
-		# 重置透明度为1，避免下次显示时是透明的
 		self.modulate.a = 1.0
+		
+		character_name_label.hide()
+		character_name_label.modulate.a = 1.0
+		
+		dialogue_label.hide()
+		dialogue_label.modulate.a = 1.0
+		
 		# 发射对话框隐藏完成信号
 		on_dialogue_hide_completed.emit()
 	)

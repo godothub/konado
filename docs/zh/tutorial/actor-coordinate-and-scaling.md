@@ -19,7 +19,7 @@ order: 3
 
 <figure>
   <center>
-    <img src="./actor-positioning.png" alt="演员定位" />
+    <img src="/images/tutorial/actor-positioning.png" alt="演员定位" />
   </center>
   <figcaption style="font-size: 14px; text-align: center; color: #666;">演员定位</figcaption>
 </figure>
@@ -30,7 +30,7 @@ order: 3
 
 <figure>
   <center>
-    <img src="./actor-position-5-1.png" alt="演员定位" />
+    <img src="/images/tutorial/actor-position-5-1.png" alt="演员定位" />
   </center>
   <figcaption style="font-size: 14px; text-align: center; color: #666;">演员定位</figcaption>
 </figure>
@@ -47,7 +47,7 @@ order: 3
 
 想要让角色立绘在对话界面正常显示，素材请遵循以下制作规范。演示操作以Krita为例，也可使用其他绘图修图软件完成调整与裁剪。
 
-请先下载 **[角色裁切参考模板](./konado-portrait-crop-template.png)**，和 **[角色定位参考模板](./konado-portrait-position-template.svg)**。
+请先下载 **[角色裁切参考模板](/images/tutorial/konado-portrait-crop-template.png)**，和 **[角色定位参考模板](/images/tutorial/konado-portrait-position-template.svg)**。
 
 
 1.  **格式要求**：素材需保存为透明背景的PNG格式，不得包含白边、黑边或杂色背景。
@@ -59,7 +59,7 @@ order: 3
 
 <figure>
   <center>
-    <img src="./portrait-template-example.png" alt="演员定位" />
+    <img src="/images/tutorial/portrait-template-example.png" alt="演员定位" />
   </center>
   <figcaption style="font-size: 14px; text-align: center; color: #666;">演员定位</figcaption>
 </figure>
@@ -95,7 +95,7 @@ order: 3
 
 <figure>
   <center>
-    <img src="./krita-crop-selection.png" alt="演员定位" />
+    <img src="/images/tutorial/krita-crop-selection.png" alt="演员定位" />
   </center>
   <figcaption style="font-size: 14px; text-align: center; color: #666;">演员定位</figcaption>
 </figure>
@@ -105,7 +105,7 @@ order: 3
 
 <figure>
   <center>
-    <img src="./krita-export-menu.png" alt="图像导出菜单" />
+    <img src="/images/tutorial/krita-export-menu.png" alt="图像导出菜单" />
   </center>
   <figcaption style="font-size: 14px; text-align: center; color: #666;">图像导出菜单</figcaption>
 </figure>
@@ -114,7 +114,7 @@ order: 3
 
 <figure>
   <center>
-    <img src="./krita-batch-export.png" alt="批量导出" />
+    <img src="/images/tutorial/krita-batch-export.png" alt="批量导出" />
   </center>
   <figcaption style="font-size: 14px; text-align: center; color: #666;">批量导出</figcaption>
 </figure>

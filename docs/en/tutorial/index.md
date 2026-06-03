@@ -1,8 +1,8 @@
 ---
-title: Basic Tutorial
+title: Tutorial
 order: 1
 ---
 
-# Basic Tutorial
+# Tutorial
 
-Konado Basic Tutorial
+Basic tutorial

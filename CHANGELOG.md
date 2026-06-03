@@ -1,43 +1,90 @@
-## 2.4.1 LTS - Macaron
+## 2.4.3 LTS - Macaron
 
-Konado 2.4.1 is officially released. This version is a Long-Term Support (LTS) release of the 2.4 series and will receive longer maintenance and update support. Compared to version 2.4.0, this update focuses on editor interface experience optimization and core functionality improvements, while comprehensively fixing various issues reported by the community, further enhancing stability and usability.
+Konado 2.4.3 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. It focuses on editor interaction fixes, dialogue playback flow improvements, and sample asset completion, further improving out-of-the-box stability and usability.
 
-### Changes
+### Fixes
 
-- Added KND_SettingsBridge settings bridge node for dialogue settings access
-- Added settings listener and settings button functionality to the dialogue manager
-- Integrated volume synchronization logic in the audio interface
+#### Performance System
+
+- Removed the ShaderMaterial from the scene and now dynamically creates and assigns it to the background node in the ready function. This unifies material initialization and prevents issues where the material is null and cannot be configured when the scene loads.
+
+
+## 2.4.2 LTS - Macaron
+
+Konado 2.4.2 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. It focuses on editor interaction fixes, dialogue playback flow improvements, and sample asset completion, further improving out-of-the-box stability and usability.
 
 ### Fixes
 
 #### Editor
 
-- Fixed theme and button styles, reset editor position to bottom, allowing it to pop up freely for convenient simultaneous preview of game scenes and dialogue editing
-- Fixed editor panel minimum height to 300px, ensuring the editor panel is visible during initialization
-- Fixed compatibility issues with Godot 4.6 API changes
+- Fixed the KS editor display logic so it no longer leaves an abnormal blank area occupying the main screen.
+- Fixed visibility control in the editor `_edit` method by using `ks_dock.make_visible()` instead of the incorrect `ks_editor.show()` approach.
+
+#### Dialogue System
+
+- Fixed dialogue manager autoplay logic by adjusting the execution flow after typewriter completion and moving `_process_next()` to the correct branch. This resolves incorrect flow jumps in scenes that do not wait for voice playback.
+- Improved voice playback logic by refactoring `_play_voice` to return the audio duration, optimizing the timing coordination between autoplay and waiting for voice playback after typewriter completion.
+- Fixed autoplay settings loading timing so settings are loaded during dialogue manager initialization instead of being read on demand at runtime.
+
+### Improvements
+
+#### Dialogue Manager
+
+- Added exception handling for empty current dialogue to avoid blank dialogue causing the flow to stall.
+- Optimized debug log output with clearer runtime status messages to make troubleshooting easier.
+
+#### Samples and Assets
+
+- Added the missing Demo scene voice list resource `voice_list.tres`, including sample voice entries.
+- Renamed `new_resource.tres` to `character_list.tres` to standardize resource naming.
+- Completed resource references for the character list, background list, BGM list, and voice list in the Demo scene.
+
+### Compatibility Notes
+
+- 2.4.2 continues the bottom Dock layout introduced in 2.4.1, but adjusts the visibility control logic.
+- Godot 4.6.2 or later is recommended.
+
+
+## 2.4.1 LTS - Macaron
+
+Konado 2.4.1 is officially released. This version is a Long-Term Support (LTS) maintenance update for the 2.4 series. Compared with version 2.4.0, this update focuses on editor interface experience optimization and core functionality improvements, while comprehensively fixing various issues reported by the community, further enhancing stability and usability.
+
+### Changes
+
+- Added the KND_SettingsBridge settings bridge node for dialogue settings access.
+- Added settings listener and settings button functionality to the dialogue manager.
+- Integrated volume synchronization logic in the audio interface.
+
+### Fixes
+
+#### Editor
+
+- Fixed theme and button styles, reset the editor position to the bottom, and allowed it to pop up freely for convenient simultaneous preview of game scenes and dialogue editing.
+- Fixed the editor panel minimum height to 300px, ensuring the editor panel is visible during initialization.
+- Fixed compatibility issues with Godot 4.6 API changes.
 
 ### Improvements
 
 #### Themes, Samples, and Assets
 
-- Added `NotoSansSC-VF.otf` and `ResourceHanRoundedCN-Medium.ttf` font files and corresponding SIL OFL license documents
-- Fixed font file paths in `left_theme.tres` and `middle_theme.tres` theme resources
+- Added `NotoSansSC-VF.otf` and `ResourceHanRoundedCN-Medium.ttf` font files and corresponding SIL OFL license documents.
+- Fixed font file paths in `left_theme.tres` and `middle_theme.tres` theme resources.
 
 #### Documentation
 
-- Added `.gdignore` configuration in the `docs` directory to prevent Godot from abnormally loading unnecessary documentation files
-- Updated documentation and syntax highlighter instructions
-- Optimized multilingual Konado project descriptions
+- Added `.gdignore` configuration in the `docs` directory to prevent Godot from abnormally loading unnecessary documentation files.
+- Updated documentation and syntax highlighter instructions.
+- Optimized multilingual Konado project descriptions.
 
 ### Compatibility Notes
 
-- 2.4.1 adjusts the editor panel position to the bottom. It is recommended to disable the old version plugin first, exit the project for a complete update, then re-enable it to avoid cache issues
-- Due to Godot 4.6 API changes, older versions of Godot may not work properly and need to be upgraded to Godot 4.6 or higher
-- Since new font files have been imported, if they do not take effect, it is recommended to delete the font resource file cache in the `.godot` directory
+- 2.4.1 adjusts the editor panel position to the bottom. It is recommended to disable the old plugin version first, exit the project for a complete update, and then re-enable it to avoid cache issues.
+- Due to Godot 4.6 API changes, older versions of Godot may not work properly and need to be upgraded to Godot 4.6 or later.
+- Since new font files have been imported, if they do not take effect, it is recommended to delete the font resource cache files under the `.godot` directory.
 
 ## 2.4.0 LTS - Macaron
 
-Konado 2.4.0 is a long-term support release. Compared with 2.3, this version focuses on the core dialogue flow, variable and save/load capabilities, reusable plugin ecosystem, templates, assets, and documentation system, bringing a major improvement in both functionality and stability.
+Konado 2.4.0 is a long-term support release. Compared with 2.3, this version focuses on the core dialogue flow, variable and save/load capabilities, reusable plugin ecosystem, template assets, and documentation system, bringing a major improvement in both functionality and stability.
 
 ### Highlights
 

@@ -1,7 +1,8 @@
 ---
-title: About
+title: Project Introduction
+order: 0
 ---
 
-# About
+# Introduction
 
 About Konado

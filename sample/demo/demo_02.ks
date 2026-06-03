@@ -22,6 +22,8 @@ choice "不看了" -> exit_choice
 
 choice "我要看看变量系统" -> goto_ks3
 
+choice "我要看看选项分支系统" -> goto_ks4
+
 branch start_choice
     background 01 fade
     actor show Kona 介绍正常 at 1
@@ -58,4 +60,7 @@ branch exit_choice
     
 branch goto_ks3
     jump res://sample/demo/demo_03_variable.ks
+
+branch goto_ks4
+    jump res://sample/demo/demo_04_choice_branch.ks
 # 一定要随时点上面红色的保存按钮啊！Ctrl+S不保存脚本的！

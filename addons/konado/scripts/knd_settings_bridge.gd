@@ -157,7 +157,7 @@ func show_settings_panel() -> void:
 	if not ResourceLoader.exists(load_path):
 		printerr("未安装Konado Settings")
 		return
-	var settings_panel = load("res://addons/konado_settings/scenes/settings_panel.tscn").instantiate()
+	var settings_panel = load(load_path).instantiate()
 	add_child(settings_panel)
 	# 显示设置面板
 	settings_panel.show()

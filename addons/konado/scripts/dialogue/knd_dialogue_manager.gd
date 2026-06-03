@@ -47,6 +47,7 @@ signal custom_signal(content: String)
 ## 自动播放速度
 @export var autoplayspeed: float = 2
 
+
 @export_category("Global Variable")
 
 ## 对话全局变量存储（%前缀，持久化）
@@ -163,6 +164,13 @@ func _on_setting_changed(category: String, key: String, value: Variant) -> void:
 			pass
 
 func _ready() -> void:
+	# 读取自动播放设置
+	if _settings_bridge:
+		var auto = _settings_bridge.get_auto_mode()
+		var auto_delay = _settings_bridge.get_auto_delay()
+		autoplayspeed = auto_delay
+		await get_tree().process_frame
+		start_autoplay(auto)
 	if check_visable:
 		if not self.is_visible_in_tree():
 			printerr("对话已隐藏，不做任何操作")
@@ -336,7 +344,6 @@ func start_dialogue() -> void:
 	shot_start.emit()
 
 
-
 func _process(delta) -> void:
 	match dialogueState:
 		# 关闭状态
@@ -376,20 +383,19 @@ func _process(delta) -> void:
 					if dialog.voice_id:
 						voice_id = dialog.voice_id
 		
-					var playvoice
+					var playvoice: bool = false
+					var voice_wait_time: float = 0.0
 					if voice_id:
 						playvoice = true
-					else:
-						playvoice = false
 					
 					# 如果有配音播放配音
 					if voice_id:
-						_play_voice(voice_id)
+						voice_wait_time = _play_voice(voice_id)
 					
 					if _konado_dialogue_box.typing_completed.is_connected(isfinishtyping):
 						_konado_dialogue_box.typing_completed.disconnect(isfinishtyping)
 					
-					_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice))
+					_konado_dialogue_box.typing_completed.connect(isfinishtyping.bind(playvoice, voice_wait_time))
 					# 设置角色高亮
 					if actor_auto_highlight:
 						if chara_id:
@@ -474,8 +480,6 @@ func _process(delta) -> void:
 					_process_next()
 				# 如果是播放音效
 				elif cur_dialogue_type == KND_Dialogue.Type.PLAY_SOUND_EFFECT:
-					#var s = _audio_interface.finish_playsoundeffect
-					#s.connect(_auto_process_next.bind(s))
 					var se_name = dialog.soundeffect_name
 					_play_soundeffect(se_name)
 					_dialogue_goto_state(DialogState.PAUSED)
@@ -595,25 +599,32 @@ func _process(delta) -> void:
 				print_rich("[color=cyan][b]状态：[/b][/color][color=orange]播放完成状态[/color]")
 				
 		
-## 打字完成
-func isfinishtyping(wait_voice: bool) -> void:
+## 打字完成回调
+func isfinishtyping(wait_voice: bool, wait_voice_time: float) -> void:
 	_dialogue_goto_state(DialogState.PAUSED)
-	if _settings_bridge:
-		var auto = _settings_bridge.get_auto_mode()
-		await get_tree().create_timer(1).timeout
-		start_autoplay(auto)
-	# 如果自动播放还要检查配音是否播放完毕
 	if autoplay:
-		# 如果有配音等待配音播放完成
 		if wait_voice:
-			await _audio_interface.voice_finish_playing
+			print("等待音频播放完成")
+			# 创建计时器
+			var timer = get_tree().create_timer(wait_voice_time)
+			timer.timeout.connect(
+				func():
+					_process_next()
+					)
 		else:
 			await get_tree().create_timer(autoplayspeed).timeout
-		_process_next()
+			_process_next()
+			print("触发打字完成信号")
 	else:
+		var current = _current_dialogue()
+		if current == null:
+			print("当前对话为空，无法获取下一句")
+			return
+		
+		var next_id = current.next_id
 		# 检查下一句是否是选项，如果是自动下一句
-		var nd: KND_Dialogue = cur_dialogue_shot.find_node(_current_dialogue().next_id)
-		if nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
+		var nd: KND_Dialogue = cur_dialogue_shot.find_node(next_id)
+		if nd != null and nd.dialog_type == KND_Dialogue.Type.SHOW_CHOICE:
 			print("选项自动下一个")
 			await get_tree().create_timer(0.05).timeout
 			_process_next()
@@ -691,7 +702,8 @@ func start_autoplay(value: bool):
 	else:
 		_autoPlayButton.set_text("自动播放")
 	await get_tree().process_frame
-	_process_next()
+	if autoplay or dialogueState != DialogState.OFF:
+		_process_next()
 	
 	
 	
@@ -793,19 +805,19 @@ func _play_bgm(bgm_name: String) -> void:
 			% [bgm_name, str(available_bgm_names)]
 		)
 
-## 播放配音
-func _play_voice(voice_name: String) -> void:
+## 播放配音，返回音频时长
+func _play_voice(voice_name: String) -> float:
 	if voice_name == null:
-		return
+		return 0.0
 	var target_voice: AudioStream
 	if voice_list == null or voice_list.voices == null:
-		return # 判空
+		return 0.0
 	for voice in voice_list.voices:
 		if voice.voice_name == voice_name:
 			target_voice = voice.voice
 			break
 	_audio_interface.play_voice(target_voice)
-	pass
+	return target_voice.get_length()
 
 
 ## 播放音效

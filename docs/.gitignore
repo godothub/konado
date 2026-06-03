@@ -1,6 +1,7 @@
 node_modules/
 dist/
 cache/
+.vitepress/.temp/
 
 pnpm-lock.yaml
 package-lock.json

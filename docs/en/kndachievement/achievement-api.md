@@ -1,22 +1,27 @@
+---
+title: API Usage
+order: 3
+---
+
 # KND_AchievementManager API Reference
 
 ## Signals
 
-The achievement system provides the following signals, which can be used to listen for achievement-related events and execute custom logic:
+The achievement system provides the following signals, which can be used to listen for achievement-related events and run custom logic:
 
 ### achievement_unlocked
 
-**Signal Signature:** `achievement_unlocked(achievement_id: String, data: Dictionary)`
+**Signal signature:** `achievement_unlocked(achievement_id: String, data: Dictionary)`
 
-**Triggered When:** Fires when any achievement is unlocked
+**Triggered when:** Any achievement is unlocked
 
 **Parameters:**
-- `achievement_id`: The ID of the unlocked achievement
-- `data`: The full data dictionary of the achievement, including name, description, icon, etc.
+- `achievement_id`: ID of the unlocked achievement
+- `data`: Full achievement data dictionary, including name, description, icon, and other information
 
-**Use Cases:** For executing reward logic, playing celebration animations, displaying custom notifications, etc. when an achievement is unlocked
+**Use cases:** Run reward logic, play celebration animations, display custom notifications, and so on when an achievement is unlocked
 
-**Example Code:**
+**Example code:**
 ```gdscript
 # Connect signal
 KND_AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)
@@ -25,24 +30,24 @@ KND_AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)
 func _on_achievement_unlocked(achievement_id: String, data: Dictionary) -> void:
     print("Achievement unlocked: " + data.get("name"))
     # Play achievement unlock sound effect
-    # Show custom celebration animation
-    # Grant player rewards
+    # Display custom celebration animation
+    # Give player rewards
 ```
 
 ### achievement_progress_updated
 
-**Signal Signature:** `achievement_progress_updated(achievement_id: String, current: float, target: float)`
+**Signal signature:** `achievement_progress_updated(achievement_id: String, current: float, target: float)`
 
-**Triggered When:** Fires when an achievement's progress value is updated
+**Triggered when:** An achievement progress value is updated
 
 **Parameters:**
-- `achievement_id`: The ID of the achievement with updated progress
-- `current`: The current progress value
-- `target`: The target progress value
+- `achievement_id`: ID of the achievement whose progress was updated
+- `current`: Current progress value
+- `target`: Target progress value
 
-**Use Cases:** For displaying achievement progress bars, providing progress feedback, updating UI display, etc.
+**Use cases:** Display achievement progress bars, provide progress feedback, update UI display, and so on
 
-**Example Code:**
+**Example code:**
 ```gdscript
 # Connect signal
 KND_AchievementManager.achievement_progress_updated.connect(_on_progress_updated)
@@ -52,20 +57,20 @@ func _on_progress_updated(achievement_id: String, current: float, target: float)
     var progress_percentage = (current / target) * 100
     print("Achievement progress updated: " + achievement_id + " - " + str(progress_percentage) + "%")
     # Update UI progress bar
-    # Display progress notification
+    # Display progress hint
 ```
 
 ### achievements_reset
 
-**Signal Signature:** `achievements_reset()`
+**Signal signature:** `achievements_reset()`
 
-**Triggered When:** Fires when all achievements are reset
+**Triggered when:** All achievements are reset
 
 **Parameters:** None
 
-**Use Cases:** For updating the UI after an achievement reset, displaying a reset notification, performing cleanup operations, etc.
+**Use cases:** Update UI after achievement reset, display reset notifications, perform cleanup operations, and so on
 
-**Example Code:**
+**Example code:**
 ```gdscript
 # Connect signal
 KND_AchievementManager.achievements_reset.connect(_on_achievements_reset)
@@ -79,52 +84,52 @@ func _on_achievements_reset() -> void:
 
 ### achievements_loaded
 
-**Signal Signature:** `achievements_loaded()`
+**Signal signature:** `achievements_loaded()`
 
-**Triggered When:** Fires when the achievement system has finished loading
+**Triggered when:** The achievement system finishes loading
 
 **Parameters:** None
 
-**Use Cases:** For initialising the UI after achievements have loaded, executing logic that depends on achievement data, etc.
+**Use cases:** Initialize UI after achievements finish loading, run logic that depends on achievement data, and so on
 
-**Example Code:**
+**Example code:**
 ```gdscript
 # Connect signal
 KND_AchievementManager.achievements_loaded.connect(_on_achievements_loaded)
 
 # Signal handler
 func _on_achievements_loaded() -> void:
-    print("Achievement data loaded successfully")
-    # Initialise achievement panel
-    # Execute logic that depends on achievement data
+    print("Achievement data loaded")
+    # Initialize achievement panel
+    # Run logic that depends on achievement data
 ```
 
 ## Core Methods
 
-### Unlocking Achievements
+### Unlock Achievement
 
 ```gdscript
-# Unlock an achievement directly by ID
+# Directly unlock an achievement by ID
 KND_AchievementManager.unlock_achievement("achievement_id")
 ```
 
 ### Progress Management
 
 ```gdscript
-# Increment a counter value
+# Increase counter value
 KND_AchievementManager.increment_progress("counter_key", 1.0)
 
-# Set a flag value
+# Set flag value
 KND_AchievementManager.set_flag("flag_key", true)
 ```
 
 ### Achievement Queries
 
 ```gdscript
-# Check if an achievement is unlocked
+# Check whether an achievement is unlocked
 KND_AchievementManager.is_unlocked("achievement_id")
 
-# Get a single achievement's data
+# Get data for a single achievement
 KND_AchievementManager.get_achievement("achievement_id")
 
 # Get all achievements
@@ -143,16 +148,16 @@ KND_AchievementManager.get_unlock_percentage()
 ### Panel Management
 
 ```gdscript
-# Show the achievement panel
+# Show achievement panel
 KND_AchievementManager.show_panel()
 
-# Hide the achievement panel
+# Hide achievement panel
 KND_AchievementManager.hide_panel()
 
-# Toggle the achievement panel display state
+# Toggle achievement panel visibility
 KND_AchievementManager.toggle_panel()
 
-# Check if the panel is visible
+# Check whether the panel is visible
 KND_AchievementManager.is_panel_visible()
 ```
 

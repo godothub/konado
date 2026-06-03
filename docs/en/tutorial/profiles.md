@@ -1,20 +1,27 @@
 ---
-title: Basic Configuration
-order: 9
+title: Project Configuration
+order: 2
 ---
 
 # Basic Configuration
 
-## Adding to Scene
+Recommended project configuration for visual novel dialogue games:
 
-After installation, you can add Konado's dialogue template to your scene by simply dragging and dropping Konado's dialogue template into the scene.
+| Setting | Recommended value |
+| :--- | :--- |
+| `Display > Window > Size > Width` | `1920` |
+| `Display > Window > Size > Height` | `1080` |
+| `Display > Window > Size > Resizable` | `true` |
+| `Display > Window > Stretch > Mode` | `viewport` |
+| `Display > Window > Stretch > Aspect` | `keep` |
+| `Display > Window > Stretch > Scale` | `1.0` |
+| `Display > Window > Stretch > Scale Mode` | `fractional` |
+| `Display > Window > DPI > Allow HiDPI` | `true` |
 
-The template is located at:
+## Add to Scene
 
-```
-res://addons/konado/template/
-```
+After installation, you can add Konado's dialogue template to your scene by dragging the Konado dialogue template into the scene.
 
-## Resource Profiles
+## Boot Image
 
-Resource profiles define how Konado maps identifiers used in scripts to actual asset files. Configure your profiles to link character names, backgrounds, and audio identifiers to their corresponding resource paths.
+`application/boot_splash/image`

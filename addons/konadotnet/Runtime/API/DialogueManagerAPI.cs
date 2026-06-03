@@ -1,6 +1,4 @@
 using Godot;
-using System;
-using System.Collections.Generic;
 
 namespace Konado.Runtime.API;
 
@@ -9,76 +7,74 @@ namespace Konado.Runtime.API;
 /// </summary>
 public sealed partial class DialogueManagerAPI : Node
 {
+    private const string DialogueManagerScriptPath = "res://addons/konado/scripts/dialogue/knd_dialogue_manager.gd";
+
     private Node _source;
-    
-    public bool IsReady = false;
+
+    public bool IsReady { get; private set; }
+    public Node Source => _source;
     
     public override void _Ready()
     {
-	    _source = GetNodeOrNull("/root/KonadoSample/DialogManager");
-	    
-	    if (_source == null)
-	    {
-		    GD.Print("指定路径未找到DialogManager，尝试遍历场景树查找...");
-
-		    var konadoSampleNode = FindNodeInTree(GetTree().Root, "KonadoSample");
-		    if (konadoSampleNode != null)
-		    {
-			    _source = konadoSampleNode.GetNodeOrNull("DialogManager");
-		    }
-		    
-		    if (_source == null)
-		    {
-			    _source = FindNodeInTree(GetTree().Root, "DialogManager");
-		    }
-		    
-		    if (_source == null)
-		    {
-			    GD.PrintErr("未找到对话管理器节点。请确保已安装 Konado 插件，并且已初始化对话管理器节点。");
-			    return;
-		    }
-            
-		    GD.Print($"成功通过遍历找到DialogManager节点：{_source.GetPath()}");
-		    
-		    IsReady =  true;
-	    }
-	    else
-	    {
-		    GD.Print("成功通过指定路径找到DialogManager节点");
-
-		    IsReady = true;
-	    }
+        BindDialogueManager();
     }
 
-    /// <summary>
-    /// 递归遍历场景树查找指定名称的节点
-    /// </summary>
-    /// <param name="currentNode">当前遍历的节点</param>
-    /// <param name="targetName">目标节点名称</param>
-    /// <returns>找到的节点（未找到返回null）</returns>
-    private Node FindNodeInTree(Node currentNode, string targetName)
+    public bool BindDialogueManager(Node source = null)
     {
-	    if (currentNode == null) return null;
+        _source = source ?? FindDialogueManager(GetTree().Root);
+        IsReady = _source != null;
 
-	    // 匹配当前节点名称
-	    if (currentNode.Name == targetName)
-	    {
-		    return currentNode;
-	    }
+        if (!IsReady)
+        {
+            GD.PrintErr("未找到 KND_DialogueManager 节点。请确保场景中已实例化 Konado 对话管理器。");
+            return false;
+        }
 
-	    // 递归遍历子节点
-	    foreach (Node child in currentNode.GetChildren())
-	    {
-		    Node foundNode = FindNodeInTree(child, targetName);
-		    if (foundNode != null)
-		    {
-			    return foundNode;
-		    }
-	    }
-
-	    return null;
+        GD.Print($"Konado.NET 已绑定对话管理器：{_source.GetPath()}");
+        return true;
     }
-	
+
+    private static Node FindDialogueManager(Node currentNode)
+    {
+        if (currentNode == null)
+            return null;
+
+        if (IsDialogueManager(currentNode))
+            return currentNode;
+
+        foreach (Node child in currentNode.GetChildren())
+        {
+            var foundNode = FindDialogueManager(child);
+            if (foundNode != null)
+                return foundNode;
+        }
+
+        return null;
+    }
+
+    private static bool IsDialogueManager(Node node)
+    {
+        if (node == null)
+            return false;
+
+        if (node.Name == "DialogManager" || node.Name == "DialogueManager" || node.Name == "KonadoDialogueManager")
+            return true;
+
+        if (!ResourceLoader.Exists(DialogueManagerScriptPath))
+            return false;
+
+        var sourceScript = ResourceLoader.Load<GDScript>(DialogueManagerScriptPath);
+        return node.GetScript().As<GDScript>() == sourceScript;
+    }
+
+    private bool EnsureReady()
+    {
+        if (IsReady || BindDialogueManager())
+            return true;
+
+        GD.PrintErr("Konado.NET DialogueManagerAPI 尚未就绪。");
+        return false;
+    }
     
     public static class GDScriptSignalName
     {
@@ -86,6 +82,7 @@ public sealed partial class DialogueManagerAPI : Node
         public static readonly StringName ShotEnd = "shot_end";
         public static readonly StringName DialogueLineStart = "dialogue_line_start";
         public static readonly StringName DialogueLineEnd = "dialogue_line_end";
+        public static readonly StringName CustomSignal = "custom_signal";
     }
 
     public delegate void ShotStartSignalHandler();
@@ -95,6 +92,7 @@ public sealed partial class DialogueManagerAPI : Node
     {
         add
         {
+            if (!EnsureReady()) return;
             if (_shotStartSignal is null)
             {
                 _shotStartSignalCallable = Callable.From(() => _shotStartSignal?.Invoke());
@@ -104,6 +102,7 @@ public sealed partial class DialogueManagerAPI : Node
         }
         remove
         {
+            if (!EnsureReady()) return;
             _shotStartSignal -= value;
             if (_shotStartSignal is not null) return;
             _source.Disconnect(GDScriptSignalName.ShotStart, _shotStartSignalCallable);
@@ -118,6 +117,7 @@ public sealed partial class DialogueManagerAPI : Node
     {
         add
         {
+            if (!EnsureReady()) return;
             if (_shotEndSignal is null)
             {
                 _shotEndSignalCallable = Callable.From(() => _shotEndSignal?.Invoke());
@@ -127,6 +127,7 @@ public sealed partial class DialogueManagerAPI : Node
         }
         remove
         {
+            if (!EnsureReady()) return;
             _shotEndSignal -= value;
             if (_shotEndSignal is not null) return;
             _source.Disconnect(GDScriptSignalName.ShotEnd, _shotEndSignalCallable);
@@ -135,22 +136,24 @@ public sealed partial class DialogueManagerAPI : Node
         
     }
 
-    public delegate void DialogueLineStartSignalHandler(int line);
+    public delegate void DialogueLineStartSignalHandler(string nodeId);
     private DialogueLineStartSignalHandler _dialogueLineStartSignal;
     private Callable _dialogueLineStartSignalCallable;
     public event DialogueLineStartSignalHandler DialogueLineStart
     {
         add
         {
+            if (!EnsureReady()) return;
             if (_dialogueLineStartSignal is null)
             {
-                _dialogueLineStartSignalCallable = Callable.From((int line) => _dialogueLineStartSignal?.Invoke(line));
+                _dialogueLineStartSignalCallable = Callable.From((string nodeId) => _dialogueLineStartSignal?.Invoke(nodeId));
                 _source.Connect(GDScriptSignalName.DialogueLineStart, _dialogueLineStartSignalCallable);
             }
             _dialogueLineStartSignal += value;
         }
         remove
         {
+            if (!EnsureReady()) return;
             _dialogueLineStartSignal -= value;
             if (_dialogueLineStartSignal is not null) return;        
             _source.Disconnect(GDScriptSignalName.DialogueLineStart, _dialogueLineStartSignalCallable);
@@ -158,22 +161,24 @@ public sealed partial class DialogueManagerAPI : Node
         }
     }
 
-    public delegate void DialogueLineEndSignalHandler(int line);
+    public delegate void DialogueLineEndSignalHandler(string nodeId);
     private DialogueLineEndSignalHandler _dialogueLineEndSignal;
     private Callable _dialogueLineEndSignalCallable;
     public event DialogueLineEndSignalHandler DialogueLineEnd
     {
         add
         {
+            if (!EnsureReady()) return;
             if (_dialogueLineEndSignal is null)
             {
-                _dialogueLineEndSignalCallable = Callable.From((int line) => _dialogueLineEndSignal?.Invoke(line));
+                _dialogueLineEndSignalCallable = Callable.From((string nodeId) => _dialogueLineEndSignal?.Invoke(nodeId));
                 _source.Connect(GDScriptSignalName.DialogueLineEnd, _dialogueLineEndSignalCallable);
             }
             _dialogueLineEndSignal += value;
         }
         remove
         {
+            if (!EnsureReady()) return;
             _dialogueLineEndSignal -= value;
             if (_dialogueLineEndSignal is not null) return;
             _source.Disconnect(GDScriptSignalName.DialogueLineEnd, _dialogueLineEndSignalCallable);
@@ -181,25 +186,100 @@ public sealed partial class DialogueManagerAPI : Node
         }
     }
 
+    public delegate void CustomSignalHandler(string content);
+    private CustomSignalHandler _customSignal;
+    private Callable _customSignalCallable;
+    public event CustomSignalHandler CustomSignal
+    {
+        add
+        {
+            if (!EnsureReady()) return;
+            if (_customSignal is null)
+            {
+                _customSignalCallable = Callable.From((string content) => _customSignal?.Invoke(content));
+                _source.Connect(GDScriptSignalName.CustomSignal, _customSignalCallable);
+            }
+            _customSignal += value;
+        }
+        remove
+        {
+            if (!EnsureReady()) return;
+            _customSignal -= value;
+            if (_customSignal is not null) return;
+            _source.Disconnect(GDScriptSignalName.CustomSignal, _customSignalCallable);
+            _customSignalCallable = default;
+        }
+    }
+
     public static class GDScriptMethodName
     {
         public static readonly StringName InitDialogue = "init_dialogue";
+        public static readonly StringName SetShot = "set_shot";
         public static readonly StringName StartDialogue = "start_dialogue";
         public static readonly StringName StopDialogue = "stop_dialogue";
+        public static readonly StringName StartAutoplay = "start_autoplay";
+        public static readonly StringName SaveGame = "save_game";
+        public static readonly StringName LoadGame = "load_game";
+        public static readonly StringName DeleteSave = "delete_save";
+        public static readonly StringName GetSaveInfo = "get_save_info";
+        public static readonly StringName GetAllSaveInfo = "get_all_save_info";
     }
 
     /// <summary>
     /// 初始化对话，调用 Konado DialogueManager 节点的 init_dialogue 方法
     /// </summary>
-    public void InitDialogue() => _source?.Call(GDScriptMethodName.InitDialogue);
+    public void InitDialogue()
+    {
+        if (EnsureReady())
+            _source.Call(GDScriptMethodName.InitDialogue);
+    }
+
+    public void SetShot(Resource shot)
+    {
+        if (EnsureReady())
+            _source.Call(GDScriptMethodName.SetShot, shot);
+    }
         
     /// <summary>
     /// 开始对话，调用 Konado DialogueManager 节点的 start_dialogue 方法
     /// </summary>
-    public void StartDialogue() => _source?.Call(GDScriptMethodName.StartDialogue);
+    public void StartDialogue()
+    {
+        if (EnsureReady())
+            _source.Call(GDScriptMethodName.StartDialogue);
+    }
 
     /// <summary>
     /// 停止对话，调用 Konado DialogueManager 节点的 stop_dialogue 方法
     /// </summary>
-    public void StopDialogue() => _source?.Call(GDScriptMethodName.StopDialogue);
+    public void StopDialogue()
+    {
+        if (EnsureReady())
+            _source.Call(GDScriptMethodName.StopDialogue);
+    }
+
+    public void StartAutoplay(bool value)
+    {
+        if (EnsureReady())
+            _source.Call(GDScriptMethodName.StartAutoplay, value);
+    }
+
+    public bool SaveGame(int saveId)
+        => EnsureReady() && _source.Call(GDScriptMethodName.SaveGame, saveId).As<bool>();
+
+    public bool LoadGame(int saveId)
+        => EnsureReady() && _source.Call(GDScriptMethodName.LoadGame, saveId).As<bool>();
+
+    public bool DeleteSave(int saveId)
+        => EnsureReady() && _source.Call(GDScriptMethodName.DeleteSave, saveId).As<bool>();
+
+    public Godot.Collections.Dictionary GetSaveInfo(int saveId)
+        => EnsureReady()
+            ? _source.Call(GDScriptMethodName.GetSaveInfo, saveId).AsGodotDictionary()
+            : new Godot.Collections.Dictionary();
+
+    public Godot.Collections.Array<Godot.Collections.Dictionary> GetAllSaveInfo()
+        => EnsureReady()
+            ? _source.Call(GDScriptMethodName.GetAllSaveInfo).AsGodotArray<Godot.Collections.Dictionary>()
+            : new Godot.Collections.Array<Godot.Collections.Dictionary>();
 }

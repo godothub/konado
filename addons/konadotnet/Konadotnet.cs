@@ -1,6 +1,5 @@
 #if TOOLS
 using Godot;
-using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -17,8 +16,6 @@ public partial class Konadotnet : EditorPlugin
 		{"KonadoAPI", "res://addons/konadotnet/Runtime/API/KonadoAPI.cs"}
 		// {"DialogueManagerAPI", "res://addons/konadotnet/api/DialogueManagerAPI.cs"}
 	};
-
-	private bool _isCommunityEdition = true;
 
 	public override void _EnterTree()
 	{
@@ -53,7 +50,10 @@ public partial class Konadotnet : EditorPlugin
 
 		foreach (var autoload in _autoloads)
 		{
-			AddAutoloadSingleton(autoload.Key, autoload.Value);
+			if (!ProjectSettings.HasSetting($"autoload/{autoload.Key}"))
+			{
+				AddAutoloadSingleton(autoload.Key, autoload.Value);
+			}
 		}
 
 		GD.Print("Konadotnet插件加载成功");
@@ -65,7 +65,10 @@ public partial class Konadotnet : EditorPlugin
 	{
 		foreach (var autoload in _autoloads)
 		{
-			RemoveAutoloadSingleton(autoload.Key);
+			if (ProjectSettings.HasSetting($"autoload/{autoload.Key}"))
+			{
+				RemoveAutoloadSingleton(autoload.Key);
+			}
 		}
 	}
 }

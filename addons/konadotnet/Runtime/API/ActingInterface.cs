@@ -6,7 +6,7 @@ public sealed partial class ActingInterface : Control
 {
     public enum BackgroundTransitionEffectsType
     {
-        NoneEffect,
+        NoneEffect = 0,
         EraseEffect,
         BlindsEffect,
         WaveEffect,

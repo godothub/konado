@@ -1,5 +1,6 @@
 ---
-title: Konado Achievement System
+title: Achievement System
+order: 6
 ---
 
 # Konado Achievement System

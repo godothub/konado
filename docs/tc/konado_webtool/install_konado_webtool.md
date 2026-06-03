@@ -13,4 +13,4 @@ order: 2
 ## 安裝步驟
 
 1. 將 `konado_webtool` 插件複製到 Godot 專案的 `addons` 目錄下
-2. 在 Godot 編輯器中，進入 `專案 -> 專案設定 -> 外掛程式`，啟用 KonadoWebTool 插件
+2. 在 Godot 編輯器中，進入 `專案 -> 專案設定 -> 插件`，啟用 KonadoWebTool 插件

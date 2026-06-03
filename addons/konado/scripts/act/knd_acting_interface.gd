@@ -55,8 +55,6 @@ var chara_list: KND_CharacterList
 ## 效果层
 @onready var _effect_layer: ColorRect = $EffectLayer
 
-
-
 # Tween效果动画节点
 var effect_tween: Tween
 #存档用背景id
@@ -66,7 +64,11 @@ var TRANSITION_CONFIGS: Dictionary = {}
 
 
 func _ready() -> void:
+	# 初始化 ShaderMaterial
+	_background.material = ShaderMaterial.new()
+	# 初始化配置
 	init_transtion_config()
+	
 	for child in _chara_controler.get_children():
 		child.queue_free()
 	

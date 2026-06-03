@@ -1,0 +1,14 @@
+[remap]
+
+importer="konado.scripts"
+type="Resource"
+uid="uid://bk5rq7orrx4u"
+path="res://.godot/imported/demo_04_choice_branch.ks-c873e38c588f9da6692df61b2396d9ac.res"
+
+[deps]
+
+source_file="res://sample/demo/demo_04_choice_branch.ks"
+dest_files=["res://.godot/imported/demo_04_choice_branch.ks-c873e38c588f9da6692df61b2396d9ac.res"]
+
+[params]
+

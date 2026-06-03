@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DialogVoiceList" format=3 uid="uid://etb5ls4s2lve"]
+
+[ext_resource type="Script" uid="uid://uur73dv6qen8" path="res://addons/konado/scripts/audio/voice/knd_voice_list.gd" id="1_x2uv4"]
+[ext_resource type="Script" uid="uid://i3l661i8g2yy" path="res://addons/konado/scripts/audio/voice/knd_voice.gd" id="2_hds2i"]
+[ext_resource type="AudioStream" uid="uid://d1jj6rcfdvg8h" path="res://sample/demo/voice/你好欢迎来到我们的咖啡馆.wav" id="3_jwkla"]
+[ext_resource type="AudioStream" uid="uid://dvs2tjb1jrhr4" path="res://sample/demo/voice/今天想喝点什么.wav" id="4_ucdx4"]
+
+[sub_resource type="Resource" id="Resource_prjid"]
+script = ExtResource("2_hds2i")
+voice_name = "voice_01"
+voice = ExtResource("3_jwkla")
+metadata/_custom_type_script = "uid://i3l661i8g2yy"
+
+[sub_resource type="Resource" id="Resource_w3y05"]
+script = ExtResource("2_hds2i")
+voice_name = "voice_02"
+voice = ExtResource("4_ucdx4")
+metadata/_custom_type_script = "uid://i3l661i8g2yy"
+
+[resource]
+script = ExtResource("1_x2uv4")
+voices = Array[ExtResource("2_hds2i")]([SubResource("Resource_prjid"), SubResource("Resource_w3y05")])
+metadata/_custom_type_script = "uid://uur73dv6qen8"

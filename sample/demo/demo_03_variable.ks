@@ -13,7 +13,7 @@ background bg1 fade
 # ============================================================
 
 actor show Kona 正常 at 3
-"Kona" "欢迎来到变量系统演示！" voice_01
+"Kona" "欢迎来到变量系统演示！"
 "Kona" "首先来看持久变量（%前缀）的操作。"
 
 actor change Kona 介绍说话

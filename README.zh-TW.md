@@ -47,7 +47,11 @@ Konado 是 Godot 引擎的對話創建工具包，提供模板和對話管理器
 
 
 <a href="https://godothub.com">
-<img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://legacy.godothub.com/godothub_dark_logo.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://legacy.godothub.com/godothub_light_logo.png">
+  <img src="https://legacy.godothub.com/godothub_light_logo.png" alt="godothub" style="width: 65%;" />
+</picture>
 </a>
 
 ## 贊助支持

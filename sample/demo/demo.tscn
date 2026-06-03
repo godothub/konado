@@ -1,10 +1,11 @@
 [gd_scene format=3 uid="uid://bcl2e6o0kb5dm"]
 
 [ext_resource type="Script" uid="uid://ct7rfs05wpar0" path="res://sample/demo/demo.gd" id="1_sgljs"]
-[ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/new_resource.tres" id="3_c17kf"]
+[ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/character_list.tres" id="3_c17kf"]
 [ext_resource type="Resource" uid="uid://dtbwl6d1phfk0" path="res://sample/demo/demo_01.ks" id="4_dv03n"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/bg_list.tres" id="4_qcbmp"]
 [ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/bgm_list.tres" id="5_qcbmp"]
+[ext_resource type="Resource" uid="uid://etb5ls4s2lve" path="res://sample/demo/voice_list.tres" id="7_3bwhi"]
 [ext_resource type="PackedScene" uid="uid://ci5v2a2rbkm7w" path="res://addons/konado/template/konado_dialogue_middle.tscn" id="11_dv03n"]
 [ext_resource type="PackedScene" uid="uid://buq324t8ugy0q" path="res://addons/konado/template/konado_dialogue_left.tscn" id="12_nuu33"]
 
@@ -21,6 +22,10 @@ dialogue_manager = NodePath("KonadoDialogueLeft")
 [node name="KonadoDialogueLeft" parent="." unique_id=1487339260 instance=ExtResource("12_nuu33")]
 layout_mode = 1
 start_dialogue_shot = ExtResource("4_dv03n")
+chara_list = ExtResource("3_c17kf")
+background_list = ExtResource("4_qcbmp")
+bgm_list = ExtResource("5_qcbmp")
+voice_list = ExtResource("7_3bwhi")
 
 [node name="KonadoDialogueMiddle" parent="." unique_id=1111480236 instance=ExtResource("11_dv03n")]
 visible = false

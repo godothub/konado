@@ -12,8 +12,6 @@
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_b1osp"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_h66lv"]
-
 [sub_resource type="Gradient" id="Gradient_6xj1n"]
 offsets = PackedFloat32Array(0, 0.4)
 colors = PackedColorArray(0, 0, 0, 0, 0, 0, 0, 0.5647059)
@@ -63,7 +61,6 @@ theme_override_styles/panel = SubResource("StyleBoxEmpty_b1osp")
 script = ExtResource("2_6xj1n")
 
 [node name="BackgroundLayer" type="ColorRect" parent="KonadoUI/ActingInterface" unique_id=1466239429]
-material = SubResource("ShaderMaterial_h66lv")
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 

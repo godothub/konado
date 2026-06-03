@@ -1,5 +1,6 @@
 ---
-title: Konado WebTool
+title: WebTool
+order: 7
 ---
 
 # Konado WebTool

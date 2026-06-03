@@ -1,6 +1,6 @@
 ---
-title: 基础教程
-order: 1
+title: 基础
+order: 3
 ---
 
 # 基础教程

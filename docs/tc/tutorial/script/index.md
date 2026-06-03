@@ -1,6 +1,6 @@
 ---
 title: Konado Script
-order: 2
+order: 5
 ---
 
 # Konado Script

@@ -1,6 +1,6 @@
 ---
 title: 成就系统
-order: 6
+order: 9
 ---
 
 # Konado成就系统

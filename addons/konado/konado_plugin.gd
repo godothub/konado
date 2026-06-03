@@ -32,14 +32,12 @@ var ks_tooltip_plugin: EditorResourceTooltipPlugin
 var ks_editor: KsEditorWindow
 var ks_dock :EditorDock
 
-## 追踪当前活跃的编辑器: "ks" 或 "graph"
-var _active_editor: String = "ks"
 
 var inspector_plugin: EditorInspectorPlugin = null
 
 
 func _has_main_screen() -> bool:
-	return true
+	return false
 
 func _enter_tree() -> void:
 	_setup_import_plugins()
@@ -57,6 +55,7 @@ func _enter_tree() -> void:
 	ks_dock.default_slot = EditorDock.DOCK_SLOT_BOTTOM
 	ks_editor = load("res://addons/konado/editor/ks_editor/ks_editor.tscn").instantiate() as KsEditorWindow
 	ks_dock.add_child(ks_editor)
+	ks_editor.visible = true
 	add_dock(ks_dock)
 
 	var inspector_plugin = preload("res://addons/konado/audioeffect/audioeffect_inspector_plugin.gd").new()
@@ -64,8 +63,8 @@ func _enter_tree() -> void:
 	add_inspector_plugin(inspector_plugin)
 	
 # 控制显示
-func _make_visible(visible: bool) -> void:
-	ks_dock.visible = visible
+#func _make_visible(visible: bool) -> void:
+	#ks_dock.visible = visible
 
 func _exit_tree() -> void:
 	_cleanup_import_plugins()
@@ -93,9 +92,8 @@ func _handles(object: Object) -> bool:
 
 func _edit(object: Object) -> void:
 	if object is Resource and object.resource_path.get_extension() == "ks":
-		_active_editor = "ks"
 		ks_editor.edit(object.resource_path)
-		ks_editor.show()
+		ks_dock.make_visible()
 	
 	
 ## 设置导入插件
@@ -107,12 +105,12 @@ func _setup_import_plugins() -> void:
 	add_import_plugin(kdic_import_plugin)
 	
 	
-## 设置国际化
-func _setup_internationalization() -> void:
-	ProjectSettings.set_setting("internationalization/locale/translations", TRANSLATION_PATHS)
-	ProjectSettings.set_setting("internationalization/locale/locale_filter_mode", 1)  # 允许所有区域
-	ProjectSettings.save()
-	
+# 设置国际化
+#func _setup_internationalization() -> void:
+	#ProjectSettings.set_setting("internationalization/locale/translations", TRANSLATION_PATHS)
+	#ProjectSettings.set_setting("internationalization/locale/locale_filter_mode", 1)  # 允许所有区域
+	#ProjectSettings.save()
+	#
 
 ## 清理导入插件
 func _cleanup_import_plugins() -> void:

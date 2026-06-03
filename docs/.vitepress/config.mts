@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 import { MermaidMarkdown, MermaidPlugin } from 'vitepress-plugin-mermaid'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { genZhSidebar, genEnSidebar, genTcSidebar } from './genSidebar'
+import { genZhSidebar, genEnSidebar, genTcSidebar, genJaSidebar, genKoSidebar } from './genSidebar'
 import { bbcodeLanguage } from './bbcodeLanguage'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -38,6 +38,34 @@ export default defineConfig({
     [
       'link',
       { rel: 'icon', href: 'https://godothub.atomgit.net/web/icon/konado/kona/icon.png' }
+    ],
+    [
+      'script',
+      {},
+      `(() => {
+        const supported = ['zh', 'tc', 'en', 'ja', 'ko'];
+        const path = window.location.pathname.replace(/\\/index\\.html$/, '/');
+        const base = '/oss/konado/';
+        const isRoot = path === '/' || path === base || path === base.slice(0, -1);
+        const storageKey = 'konado-lang-redirected';
+        const hasRedirected = (() => {
+          try { return sessionStorage.getItem(storageKey) === '1'; }
+          catch { return false; }
+        })();
+        if (!isRoot || hasRedirected) return;
+        const languages = navigator.languages?.length ? navigator.languages : [navigator.language || ''];
+        const matched = languages.map(lang => lang.toLowerCase()).map(lang => {
+          if (lang.startsWith('ja')) return 'ja';
+          if (lang.startsWith('ko')) return 'ko';
+          if (lang.startsWith('zh-tw') || lang.startsWith('zh-hk') || lang.startsWith('zh-mo') || lang.startsWith('zh-hant')) return 'tc';
+          if (lang.startsWith('zh')) return 'zh';
+          if (lang.startsWith('en')) return 'en';
+          return '';
+        }).find(lang => supported.includes(lang)) || 'en';
+        try { sessionStorage.setItem(storageKey, '1'); } catch {}
+        const targetBase = path === '/' ? '/' : base;
+        window.location.replace(targetBase + matched + '/');
+      })();`
     ]
   ],
   themeConfig: {
@@ -64,7 +92,7 @@ export default defineConfig({
     ],
     footer: {
       message: 'Released under BSD3-Clause License.',
-      copyright: 'Copyright © 2025 Konado Project. <br>All rights reserved.'
+      copyright: 'Copyright © 2023-2026 Konado Project. <br>All rights reserved.'
     }
   },
 
@@ -118,7 +146,7 @@ export default defineConfig({
 
     tc: {
       label: '繁體中文',
-      lang: 'zh-CN',
+      lang: 'zh-Hant',
       description: 'Konado: 視覺小說框架',
       themeConfig: {
         lastUpdatedText: '最後更新於',
@@ -179,6 +207,98 @@ export default defineConfig({
           { text: 'Sponsor Us', link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377' }
         ],
         sidebar: genEnSidebar(docsRoot)
+      }
+    },
+
+    ja: {
+      label: '日本語',
+      lang: 'ja',
+      description: 'Konado: ビジュアルノベルフレームワーク',
+      themeConfig: {
+        lastUpdatedText: '最終更新',
+        editLink: {
+          pattern: 'https://github.com/godothub/konado/edit/main/docs/:path',
+          text: 'このページを編集'
+        },
+        outlineTitle: '目次',
+        sidebarMenuLabel: 'メニュー',
+        returnToTopLabel: 'トップへ戻る',
+        darkModeSwitchLabel: 'ダークモード',
+        docFooter: {
+          prev: '前へ',
+          next: '次へ'
+        },
+        search: {
+          provider: 'local',
+          options: {
+            translations: {
+              button: {
+                buttonText: '検索',
+                buttonAriaLabel: '検索'
+              },
+              modal: {
+                footer: {
+                  selectText: '選択',
+                  navigateText: '移動',
+                  closeText: '閉じる'
+                }
+              }
+            }
+          }
+        },
+        nav: [
+          { text: 'Godot Hub', link: 'https://godothub.com' },
+          { text: 'ドキュメント', link: '/ja/tutorial/install' },
+          { text: 'プラグインをダウンロード', link: 'https://github.com/godothub/konado/releases/latest' },
+          { text: 'スポンサー', link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377' }
+        ],
+        sidebar: genJaSidebar(docsRoot)
+      }
+    },
+
+    ko: {
+      label: '한국어',
+      lang: 'ko',
+      description: 'Konado: 비주얼 노벨 프레임워크',
+      themeConfig: {
+        lastUpdatedText: '마지막 업데이트',
+        editLink: {
+          pattern: 'https://github.com/godothub/konado/edit/main/docs/:path',
+          text: '이 페이지 편집'
+        },
+        outlineTitle: '목차',
+        sidebarMenuLabel: '메뉴',
+        returnToTopLabel: '맨 위로',
+        darkModeSwitchLabel: '다크 모드',
+        docFooter: {
+          prev: '이전',
+          next: '다음'
+        },
+        search: {
+          provider: 'local',
+          options: {
+            translations: {
+              button: {
+                buttonText: '검색',
+                buttonAriaLabel: '검색'
+              },
+              modal: {
+                footer: {
+                  selectText: '선택',
+                  navigateText: '이동',
+                  closeText: '닫기'
+                }
+              }
+            }
+          }
+        },
+        nav: [
+          { text: 'Godot Hub', link: 'https://godothub.com' },
+          { text: '문서', link: '/ko/tutorial/install' },
+          { text: '플러그인 다운로드', link: 'https://github.com/godothub/konado/releases/latest' },
+          { text: '후원하기', link: 'https://ifdian.net/item/52230b2860a011f083ef52540025c377' }
+        ],
+        sidebar: genKoSidebar(docsRoot)
       }
     }
   }

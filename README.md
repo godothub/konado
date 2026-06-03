@@ -44,7 +44,11 @@ Join our community to connect with other Konado users, share ideas, and get supp
 - Discord Server Channel: [Join Now](https://discord.com/channels/1378639076747513938/1425084240550166592)
 
 <a href="https://godothub.com">
-<img src="https://godothub.com/licon/godothub.png" alt="godothub" style="width: 65%;" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://legacy.godothub.com/godothub_dark_logo.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://legacy.godothub.com/godothub_light_logo.png">
+  <img src="https://legacy.godothub.com/godothub_light_logo.png" alt="godothub" style="width: 65%;" />
+</picture>
 </a>
 
 ## Sponsors

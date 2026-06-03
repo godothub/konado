@@ -1,5 +1,3 @@
-以下是翻譯成台灣慣用繁體中文（zh-TW）的文本：
-
 ---
 title: 成就系統
 order: 2
@@ -9,14 +7,11 @@ order: 2
 
 ## 前言
 
-KonadoAchievement 是一款輕量、資料驅動的成就系統插件，專為 Konado 設計，提供解鎖、進度追蹤、彈出通知、成就面板等完整功能。支援與 Konado 連動使用，也可獨立執行。
-
+KonadoAchievement 是一款輕量、資料驅動的成就系統插件，專為 Konado 設計，提供解鎖、進度追蹤、彈窗通知、成就面板等完整功能。它既支援與 Konado 聯動使用，也可以獨立執行。
 
 ### 設定檔
 
-成就系統使用 JSON 設定檔定義成就，預設路徑為 `res://addons/konado_achievement/data/achievements.json`，可以在 `KND_AchievementManager` 中設定其他路徑。
-
-
+成就系統使用 JSON 設定檔定義成就，預設路徑為 `res://addons/konado_achievement/data/achievements.json`，也可以在 `KND_AchievementManager` 中設定其他路徑。
 
 設定檔結構範例：
 
@@ -68,7 +63,7 @@ KonadoAchievement 是一款輕量、資料驅動的成就系統插件，專為 K
 系統支援兩種類型的進度追蹤：
 
 1. **計數器**：累計數值達到目標值時解鎖
-2. **旗標**：當旗標被設定為特定值時解鎖
+2. **標誌**：當標誌被設定為特定值時解鎖
 
 ### 通知系統
 
@@ -78,14 +73,13 @@ KonadoAchievement 是一款輕量、資料驅動的成就系統插件，專為 K
 
 提供一個可顯示所有成就的面板，包括已解鎖和未解鎖的成就，以及解鎖進度。
 
-
 ## 成就設定詳解
 
 ### 成就屬性
 
 每個成就可以包含以下屬性：
 
-- `id`: 成就唯一識別碼
+- `id`: 成就唯一識別符
 - `name`: 成就名稱
 - `description`: 成就描述
 - `icon`: 成就圖示路徑（可選）
@@ -108,7 +102,7 @@ KonadoAchievement 是一款輕量、資料驅動的成就系統插件，專為 K
 
 當 `counter_key` 的值達到或超過 `target_value` 時解鎖。
 
-#### 旗標類型
+#### 標誌類型
 
 ```json
 {
@@ -128,7 +122,7 @@ KonadoAchievement 是一款輕量、資料驅動的成就系統插件，專為 K
 # 增加計數器值
 KND_AchievementManager.increment_progress("story_branch_unlocked", 1)
 
-# 設定旗標
+# 設定標誌
 KND_AchievementManager.set_flag("secret_ending_unlocked", true)
 
 # 直接解鎖成就
@@ -146,22 +140,22 @@ KND_AchievementManager.achievement_unlocked.connect(_on_achievement_unlocked)
 
 func _on_achievement_unlocked(achievement_id: String, data: Dictionary) -> void:
     print("成就解鎖: " + data.get("name"))
-    # 可以在這裡添加額外的獎勵邏輯
+    # 可以在這裡加入額外的獎勵邏輯
 ```
 
-### 自定義儲存/載入
+### 自訂儲存/載入
 
 ```gdscript
-# 設定自定義儲存處理
+# 設定自訂儲存處理
 KND_AchievementManager.custom_save_handler = Callable(self, "_custom_save")
 KND_AchievementManager.custom_load_handler = Callable(self, "_custom_load")
 
 func _custom_save(data: Dictionary) -> void:
-    # 自定義儲存邏輯
+    # 自訂儲存邏輯
     pass
 
 func _custom_load() -> Dictionary:
-    # 自定義載入邏輯
+    # 自訂載入邏輯
     return {"unlocked": {}, "progress": {}}
 ```
 

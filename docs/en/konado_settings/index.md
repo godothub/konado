@@ -1,7 +1,8 @@
 ---
-title: Konado Settings
+title: Settings System
+order: 5
 ---
 
-# Konado Settings
+# Konado Settings System
 
-Konado Settings system documentation
+Konado settings system documentation

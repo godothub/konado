@@ -1,20 +1,27 @@
 ---
-title: 基礎配置
-order: 7
+title: 專案設定
+order: 2
 ---
 
-# 基礎配置
+# 基礎設定
+
+視覺小說對話類型遊戲推薦專案設定如下：
+
+| 設定項 | 推薦值 |
+| :--- | :--- |
+| `Display > Window > Size > Width` | `1920` |
+| `Display > Window > Size > Height` | `1080` |
+| `Display > Window > Size > Resizable` | `true` |
+| `Display > Window > Stretch > Mode` | `viewport` |
+| `Display > Window > Stretch > Aspect` | `keep` |
+| `Display > Window > Stretch > Scale` | `1.0` |
+| `Display > Window > Stretch > Scale Mode` | `fractional` |
+| `Display > Window > DPI > Allow HiDPI` | `true` |
 
 ## 添加到場景
 
-安裝完成後，可以將 Konado 的對話模板添加到你的場景中，只需要將 Konado 的對話模板拖放到場景中即可。
+安裝完成後，可以將 Konado 的對話範本添加到你的場景中，只需要將 Konado 的對話範本拖放到場景中即可。
 
-模板的位置在：
+## 啟動畫面
 
-```
-res://addons/konado/template/
-```
-
-## 資源配置檔
-
-資源配置檔定義了 Konado 如何將腳本中使用的識別符號對應到實際素材檔案。配置你的配置檔，將角色名稱、背景和音訊識別符號連結到對應的資源路徑。
+`application/boot_splash/image`

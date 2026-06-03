@@ -7,4 +7,3 @@ sidebar_collapsed: true
 # 背景
 
 背景切換
-```

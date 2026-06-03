@@ -20,16 +20,15 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Konado Project"
 config/description="Konado is a dialogue creation toolkit for the Godot Engine, with templates and a dialogue manager to help you quickly build Visual Novels, Gal Games, RPGs and other story‑driven projects."
-config/version="2.4.1"
-run/main_scene="uid://bcl2e6o0kb5dm"
-config/features=PackedStringArray("4.6", "C#", "Forward Plus")
-boot_splash/image="uid://bqg62jaajvjx4"
-config/icon="uid://b5olx2vwoscbr"
+config/version="2.4.4"
+run/main_scene="res://sample/demo/demo.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+boot_splash/image="uid://ct4e2lgm6dpe7"
+config/icon="res://addons/konado/icon.png"
 boot_splash/minimum_display_time=500
 
 [autoload]
 
-KonadoAPI="*uid://ptylvcqylq7j"
 KND_AchievementManager="*uid://dlhxd0ixnuo6i"
 KND_WebTool="*uid://b4rup11rlc0uk"
 KND_Settings="*uid://crc32ueqs8u1w"
@@ -42,7 +41,7 @@ window/stretch/mode="viewport"
 
 [dotnet]
 
-project/assembly_name="Konado"
+project/assembly_name="Konado Project"
 
 [editor_plugins]
 

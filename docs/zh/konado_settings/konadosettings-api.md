@@ -134,7 +134,7 @@ var language_item = SettingItem.new()
 language_item.key = "language"
 language_item.label = "语言"
 language_item.type = SettingItem.Type.OPTION
-language_item.options = ["zh", "en", "ja"]
+language_item.options = ["zh", "tc", "en", "ja", "ko"]
 language_item.default_value = "zh"
 ```
 

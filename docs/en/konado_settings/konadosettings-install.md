@@ -1,17 +1,17 @@
 ---
-title: Install
-order: 1
+title: Installation
+order: 3
 ---
 
 # Installation Guide
 
 ## Overview
 
-Konado Settings provides a complete settings system with support for defining setting items via JSON configuration files and automatically filtering them based on the current platform.
+Konado Settings provides a complete settings system. It supports defining settings through JSON configuration files and automatically filters what is shown on different platforms.
 
-## Installation
+## Installation Method
 
-### Requirements
+## Version Requirements
 
-- Godot 4.6 or higher
-- Supports all Godot-compatible platforms
+- Godot 4.6 or later
+- Supports all platforms supported by Godot

@@ -12,7 +12,7 @@ jobs:
     steps:
       # 检出仓库代码（拉取完整历史，支持分支操作）
       - name: Checkout repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # 必须拉取完整历史，否则分支查询/切换可能失败
 

@@ -10,10 +10,16 @@ public sealed partial class KonadoAPI : Node
 
     public override void _Ready()
     {
-        if (IsModuleLoaded())
-            return;
-
         API = this;
+
+        var existingApi = GetNodeOrNull<DialogueManagerAPI>("DialogueManagerAPI");
+        if (existingApi != null)
+        {
+            DialogueManagerApi = existingApi;
+            IsApiReady = true;
+            return;
+        }
+
         DialogueManagerApi = new DialogueManagerAPI();
 
         DialogueManagerApi.Name = "DialogueManagerAPI";
@@ -22,7 +28,4 @@ public sealed partial class KonadoAPI : Node
 
         IsApiReady = true;
     }
-
-    private bool IsModuleLoaded()
-        => GetNodeOrNull("DialogueManagerAPI") != null;
 }

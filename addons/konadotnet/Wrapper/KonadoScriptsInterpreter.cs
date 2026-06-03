@@ -1,6 +1,4 @@
 #pragma warning disable CS0109
-using System.Linq;
-using System.Reflection;
 using Godot;
 
 namespace Konado.Wrapper;
@@ -17,7 +15,7 @@ public sealed partial class KonadoScriptsInterpreter : RefCounted
     /// <param name="flags"></param>
     /// <returns></returns>
     /// <exception cref="System.InvalidOperationException"></exception>
-    public KonadoScriptsInterpreter(Godot.Collections.Dictionary<string, Variant> flags)
+    public KonadoScriptsInterpreter(Godot.Collections.Dictionary<string, Variant> flags = null)
     {
         if (!ResourceLoader.Exists(SourceScriptPath))
         {
@@ -25,7 +23,7 @@ public sealed partial class KonadoScriptsInterpreter : RefCounted
         }
 
         _sourceScript ??= ResourceLoader.Load<GDScript>(SourceScriptPath);
-        _source = _sourceScript.New(flags).AsGodotObject();
+        _source = _sourceScript.New().AsGodotObject();
     }
 
     public KonadoScriptsInterpreter(GodotObject source)
@@ -56,9 +54,9 @@ public sealed partial class KonadoScriptsInterpreter : RefCounted
     }
 
     public KndShot ProcessScriptsToData(string path)
-        => new (_source.Call(GDScriptMethodName.ProcessScriptsToData, [path]).As<Resource>());
+        => new(_source.Call(GDScriptMethodName.ProcessScriptsToData, path).As<Resource>());
 
     public Dialogue ParseSingleLine(string line, long lineNumber, string path)
-        => new (_source.Call(GDScriptMethodName.ParseSingleLine, [line, lineNumber, path]).As<Resource>());
+        => new(_source.Call(GDScriptMethodName.ParseSingleLine, line, lineNumber, path).As<Resource>());
 
 }
