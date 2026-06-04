@@ -7,4 +7,4 @@ order: 6
 
 欢迎PR衍生项目列表
 
-- [XXX](url)
+- [Akonado](https://github.com/Maicarons/akonado) - 基于 Godot + Konado 的全流程 AI 视觉小说生成管线。

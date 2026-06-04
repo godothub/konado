@@ -8,8 +8,11 @@ class_name KND_Shot
 ## 起始节点ID
 @export var start_node_id: String = ""
 
-## 所有对话节点（扁平列表，通过 node_id/next_id 构成图结构）
+## 所有对话节点（扁平列表）
 @export var dialogues: Array[KND_Dialogue] = []
+
+## 依赖角色
+@export var dep_characters: Array[String] = []
 
 ## 根据 node_id 查找对话节点
 func find_node(id: String) -> KND_Dialogue:

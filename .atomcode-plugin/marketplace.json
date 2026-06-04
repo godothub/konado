@@ -1,0 +1,10 @@
+{
+    "name": "konado-script-skill",
+    "plugins": [
+        { 
+            "name": "konado-script-skill",
+            "source": ".", 
+            "skills": ["./skills/konado-script"]
+        }
+    ]
+}

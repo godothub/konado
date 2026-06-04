@@ -1,4 +1,4 @@
-background 00 fade
+background 00 blinds
 
 
 if %love == 0:
