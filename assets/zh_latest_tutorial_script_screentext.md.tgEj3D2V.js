@@ -1,0 +1,14 @@
+import{_ as s,o as t,c as n,a5 as e}from"./chunks/framework.BEZBAInb.js";const u=JSON.parse('{"title":"屏幕文本","description":"","frontmatter":{"title":"屏幕文本","order":4},"headers":[],"relativePath":"zh/latest/tutorial/script/screentext.md","filePath":"zh/latest/tutorial/script/screentext.md","lastUpdated":1788455378000}'),l={name:"zh/latest/tutorial/script/screentext.md"};function p(i,a,o,r,c,d){return t(),n("div",null,[...a[0]||(a[0]=[e(`<h1 id="屏幕文本" tabindex="-1">屏幕文本 <a class="header-anchor" href="#屏幕文本" aria-label="Permalink to &quot;屏幕文本&quot;">​</a></h1><h2 id="功能描述" tabindex="-1">功能描述 <a class="header-anchor" href="#功能描述" aria-label="Permalink to &quot;功能描述&quot;">​</a></h2><p>屏幕文本（NVL Overlay）用于显示视觉小说中的全屏正文文本，不以对话框形式呈现，而是以覆盖层的方式展示在屏幕中央区域，适合用于旁白、场景描述、内心独白等大段文本展示场景。</p><h2 id="语法结构" tabindex="-1">语法结构 <a class="header-anchor" href="#语法结构" aria-label="Permalink to &quot;语法结构&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>screentext {</span></span>
+<span class="line"><span>    &quot;文本行1&quot;</span></span>
+<span class="line"><span>    &quot;文本行2&quot;</span></span>
+<span class="line"><span>    ...</span></span>
+<span class="line"><span>}</span></span></code></pre></div><h2 id="参数说明" tabindex="-1">参数说明 <a class="header-anchor" href="#参数说明" aria-label="Permalink to &quot;参数说明&quot;">​</a></h2><table tabindex="0"><thead><tr><th>参数</th><th>必需</th><th>示例</th><th>说明</th></tr></thead><tbody><tr><td>文本行</td><td>是</td><td><code>&quot;暴风雨越来越猛烈了...&quot;</code></td><td>要显示的文本行，每行一个字符串字面量</td></tr></tbody></table><ul><li>文本行数量不限，至少需要一行</li><li>每行文本用双引号包裹，每行一句</li><li>文本行按顺序逐行显示，带有淡入动画效果</li><li>每行显示完成后，在最后一个字符右下角会显示闪烁的三角箭头指示器，点击后播放下一行</li><li>确认最后一行后，覆盖层会先淡出，再继续执行下一条指令</li></ul><h2 id="示例" tabindex="-1">示例 <a class="header-anchor" href="#示例" aria-label="Permalink to &quot;示例&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span># 显示全屏正文</span></span>
+<span class="line"><span>screentext {</span></span>
+<span class="line"><span>    &quot;暴风雨越来越猛烈了...&quot;</span></span>
+<span class="line"><span>    &quot;狂风呼啸，电闪雷鸣&quot;</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 单行文本</span></span>
+<span class="line"><span>screentext {</span></span>
+<span class="line"><span>    &quot;夜深了，四周一片寂静&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre></div>`,10)])])}const b=s(l,[["render",p]]);export{u as __pageData,b as default};

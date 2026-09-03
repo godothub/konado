@@ -1,0 +1,10 @@
+import{_ as s,o as t,c as e,a5 as n}from"./chunks/framework.BEZBAInb.js";const x=JSON.parse('{"title":"顯示或隱藏對話框","description":"","frontmatter":{"title":"顯示或隱藏對話框","order":5},"headers":[],"relativePath":"tc/latest/tutorial/script/dialogbox.md","filePath":"tc/latest/tutorial/script/dialogbox.md","lastUpdated":1788455378000}'),p={name:"tc/latest/tutorial/script/dialogbox.md"};function o(i,a,l,c,d,r){return t(),e("div",null,[...a[0]||(a[0]=[n(`<h1 id="顯示或隱藏對話框" tabindex="-1">顯示或隱藏對話框 <a class="header-anchor" href="#顯示或隱藏對話框" aria-label="Permalink to &quot;顯示或隱藏對話框&quot;">​</a></h1><p>這些指令用於控制對話框顯示狀態，並會等待淡入淡出動畫完成後再繼續執行。</p><h2 id="語法" tabindex="-1">語法 <a class="header-anchor" href="#語法" aria-label="Permalink to &quot;語法&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>showtextbox [duration]</span></span>
+<span class="line"><span>hidetextbox [duration]</span></span></code></pre></div><p><code>duration</code> 為可選的秒數，且不能是負數。省略或使用 <code>0.0</code> 可立即切換顯示狀態。</p><p><code>hidetextbox</code> 會在隱藏完成後清除目前的角色名稱和對話文字，避免下次顯示時短暫出現上一句內容。</p><h2 id="範例" tabindex="-1">範例 <a class="header-anchor" href="#範例" aria-label="Permalink to &quot;範例&quot;">​</a></h2><div class="language-text vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span># 用一秒淡入顯示對話框</span></span>
+<span class="line"><span>showtextbox 1.0</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 用半秒淡出隱藏對話框</span></span>
+<span class="line"><span>hidetextbox 0.5</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span># 立即切換顯示狀態</span></span>
+<span class="line"><span>showtextbox 0.0</span></span>
+<span class="line"><span>hidetextbox 0.0</span></span></code></pre></div>`,8)])])}const b=s(p,[["render",o]]);export{x as __pageData,b as default};

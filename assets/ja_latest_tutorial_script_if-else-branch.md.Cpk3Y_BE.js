@@ -1,0 +1,11 @@
+import{_ as s,o as e,c as n,a5 as t}from"./chunks/framework.BEZBAInb.js";const u=JSON.parse('{"title":"条件分岐","description":"","frontmatter":{"title":"条件分岐","order":5},"headers":[],"relativePath":"ja/latest/tutorial/script/if-else-branch.md","filePath":"ja/latest/tutorial/script/if-else-branch.md","lastUpdated":1788455378000}'),l={name:"ja/latest/tutorial/script/if-else-branch.md"};function p(i,a,o,c,r,d){return e(),n("div",null,[...a[0]||(a[0]=[t(`<h1 id="if-else-分岐" tabindex="-1">If Else 分岐 <a class="header-anchor" href="#if-else-分岐" aria-label="Permalink to &quot;If Else 分岐&quot;">​</a></h1><h2 id="機能説明" tabindex="-1">機能説明 <a class="header-anchor" href="#機能説明" aria-label="Permalink to &quot;機能説明&quot;">​</a></h2><p>数値条件に基づいて、再生する会話内容を選択します。条件を満たさない場合は <code>else</code> 内の会話内容を再生します。<code>else</code> がない場合は、何も再生されません。 %変数はカスタム変数で、値は整数です。会話管理で設定でき、「%変数名」の形式で参照できます。<code>==</code> は判定条件で、等しいことを表します。</p><h2 id="構文" tabindex="-1">構文 <a class="header-anchor" href="#構文" aria-label="Permalink to &quot;構文&quot;">​</a></h2><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>if %変数 == 値:</span></span>
+<span class="line"><span>    &lt;会話&gt;</span></span>
+<span class="line"><span>    &lt;会話&gt;</span></span>
+<span class="line"><span>else:</span></span>
+<span class="line"><span>    &lt;会話&gt;</span></span>
+<span class="line"><span>endif</span></span></code></pre></div><h2 id="例" tabindex="-1">例 <a class="header-anchor" href="#例" aria-label="Permalink to &quot;例&quot;">​</a></h2><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>if %love == 0:</span></span>
+<span class="line"><span>    Kona &quot;今日は何を飲みたい？&quot;</span></span>
+<span class="line"><span>else:</span></span>
+<span class="line"><span>    Kona &quot;また会えたね！&quot;</span></span>
+<span class="line"><span>    Kona &quot;今日は何を飲みたい？&quot;</span></span>
+<span class="line"><span>endif</span></span></code></pre></div>`,7)])])}const f=s(l,[["render",p]]);export{u as __pageData,f as default};
