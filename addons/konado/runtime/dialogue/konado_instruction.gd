@@ -28,6 +28,11 @@ func source_line() -> int:
 	return _program.line_for_pc(pc)
 
 
+## 指令所属剧本路径（用于失败定位：`source_path`）。
+func source_path() -> String:
+	return _program.source_path
+
+
 func next_pc() -> int:
 	return _program.next_pcs[pc]
 

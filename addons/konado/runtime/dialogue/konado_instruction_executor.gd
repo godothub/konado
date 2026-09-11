@@ -6,6 +6,7 @@ class_name KonadoInstructionExecutor
 var _host_ref: WeakRef
 var _handlers: Dictionary = {}
 var _failure: KonadoExecutionFailure
+var _executing_instruction: KonadoInstruction
 
 
 func _init(host: KonadoDialogueManager) -> void:
@@ -19,6 +20,7 @@ func _init(host: KonadoDialogueManager) -> void:
 
 func execute(instruction: KonadoInstruction, token: Dictionary) -> int:
 	_failure = null
+	_executing_instruction = instruction
 	var host := _host_ref.get_ref() as KonadoDialogueManager
 	if host == null:
 		return _failed(&"runtime.host_unavailable", "对话管理器已失效")
@@ -46,8 +48,50 @@ func get_failure() -> KonadoExecutionFailure:
 
 
 func _failed(code: StringName, message: String, context: Dictionary = {}) -> int:
-	_failure = KonadoExecutionFailure.new(code, message, context)
+	_failure = KonadoExecutionFailure.new(code, message, _locate(code, context))
 	return KonadoVirtualMachine.Result.FAILED
+
+
+## 给失败上下文补上“哪一步报错”：当前指令所属剧本、指令键与源码行号。
+## 错误编号与检出函数由 KonadoExecutionFailure 从 KonadoErrorRegistry 补齐。
+func _locate(code: StringName, context: Dictionary) -> Dictionary:
+	var enriched := context.duplicate(true)
+	var host := _host_ref.get_ref() as KonadoDialogueManager
+	if host == null:
+		return enriched
+	if host._vm.program != null:
+		enriched["source_path"] = host._vm.program.source_path
+	var instruction := (
+		_executing_instruction if _executing_instruction != null else host._current_instruction()
+	)
+	if instruction != null:
+		enriched["instruction_key"] = String(instruction.stable_key())
+		enriched["source_line"] = instruction.source_line()
+		if String(enriched.get("source_path", "")).is_empty():
+			enriched["source_path"] = instruction.source_path()
+		_refine_function(code, enriched, instruction)
+	return enriched
+
+
+## 检出函数精修：注册表若把同类失败归并到“另一个指令处理器”，则改用当前实际处理器，
+## 使 `actor motion` 的失败指向 `_actor_motion` 而不是 `_actor_change`；
+## 注册表指向更深的私有助手（如 `_condition_variable`）时更精确，保持不变。
+func _refine_function(
+	code: StringName, enriched: Dictionary, instruction: KonadoInstruction
+) -> void:
+	if not String(enriched.get("function", "")).is_empty():
+		return
+	var canonical := String(KonadoErrorRegistry.location_for(code).get("function", ""))
+	var prefix := "KonadoInstructionExecutor."
+	if not canonical.begins_with(prefix):
+		return
+	var canonical_handler := canonical.trim_prefix(prefix)
+	var handler := KonadoScriptCommandRegistry.runtime_handler(instruction.opcode())
+	if handler.is_empty() or handler == canonical_handler:
+		return
+	if not KonadoScriptCommandRegistry.RUNTIME_HANDLERS.values().has(StringName(canonical_handler)):
+		return
+	enriched["function"] = "%s%s" % [prefix, handler]
 
 
 func _dialogue(
@@ -626,12 +670,25 @@ func _textbox(
 func _make_failure(
 	code: StringName, message: String, context: Dictionary = {}
 ) -> KonadoExecutionFailure:
-	return KonadoExecutionFailure.new(code, message, context)
+	return KonadoExecutionFailure.new(code, message, _locate(code, context))
 
 
 func _failed_from_result(result: Dictionary, fallback: KonadoExecutionFailure) -> int:
 	var context := fallback.to_dictionary()
-	for key: String in ["subsystem", "operation", "resource_kind", "resource_id", "cause"]:
+	# 最终错误码可能与兜底码不同：编号与检出位置必须按最终码重新解析，避免沿用兜底位置。
+	for stale: String in ["error_id", "function", "owner"]:
+		context.erase(stale)
+	for key: String in [
+		"subsystem",
+		"operation",
+		"resource_kind",
+		"resource_id",
+		"cause",
+		"error_id",
+		"function",
+		"owner",
+		"severity",
+	]:
 		if result.has(key) and not String(result[key]).is_empty():
 			context[key] = result[key]
 	return _failed(

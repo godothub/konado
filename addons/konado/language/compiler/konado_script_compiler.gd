@@ -272,6 +272,8 @@ func compile_line(line: String, line_number: int, path: String = "") -> KonadoIn
 		for error: String in _graph_validator.get_errors():
 			_report_error(path, line_number, error)
 		return null
+	# 单行编译同样记录剧本路径，使运行期失败能定位到具体剧本。
+	program.source_path = path
 	return program.instruction_at(program.entry_pc)
 
 

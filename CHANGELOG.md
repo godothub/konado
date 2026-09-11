@@ -1,14 +1,17 @@
 ## 2.8.1 - Nanguoli
 
-### New Features
+### Feature Updates
 
-- Added a bounded, atomic dialogue, choice, and screen-text history (backlog) with a default backlog panel
-- Backlog entries support click-to-rollback: clicking any line in the history returns to that line
-- Added rollback to the previous dialogue line.
+- Added a Backlog panel to the default dialogue template for reviewing dialogue, choices, and full-screen text
+- Added support for stepping back to the previous line or clicking a history entry to return to that point in the story, resume playback, or choose a different branch
+- Added stable error IDs for actor, background, audio, camera, script, variable, compilation, resource, and achievement failures
+- Error reports identify the failing function, file, resource, and script line; single-line compilation now also preserves the source path to help locate problems
+- Added `KonadoResult` to represent successful data and structured errors consistently, making execution results easier for callers to handle
 
-### Improvements
+### Bug Fixes
 
-- Fixed an issue where actor move did not write the new position, so save/load and rollback now correctly restore character positions.
+- Fixed `actor move` failing to save the new character position, which caused save/load and rollback to restore the wrong position
+- Fixed an engine error when looking up a stage actor with an empty actor name
 
 ## 2.8.0 - Nanguoli
 

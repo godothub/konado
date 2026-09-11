@@ -32,19 +32,23 @@ static func publish(
 	report: Dictionary,
 	write_to_console := true,
 ) -> void:
-	var key := String(report.get("instruction_id", ""))
-	var line := int(report.get("source_line", -1))
-	var source_path := String(report.get("source_path", ""))
-	var location := "%s:%d" % [source_path, line]
 	if write_to_console:
-		push_error(
-			(
-				"Konado [%s]: %s (%s，指令=%s)"
-				% [String(failure.code), failure.console_message(), location, key]
-			)
-		)
+		push_error(format_line(failure, report))
 	host.runtime_failure_reported.emit(report.duplicate(true))
-	host.runtime_failed.emit(failure.message, key, line)
+	host.runtime_failed.emit(
+		failure.message,
+		String(report.get("instruction_id", "")),
+		int(report.get("source_line", -1))
+	)
+
+
+## 控制台/日志单行格式：以稳定错误编号开头，随后是机器码与完整链路
+## （检出函数、资源、操作、指令键、剧本位置），全部来自失败信封，避免重复拼接。
+static func format_line(failure: KonadoExecutionFailure, report: Dictionary) -> String:
+	var error_id := String(report.get("id", failure.error_id))
+	var code := String(report.get("code", failure.code))
+	var tag := "[%s] %s" % [error_id, code] if not error_id.is_empty() else code
+	return "Konado %s: %s" % [tag, failure.console_message(false)]
 
 
 static func _source_path(host: Node) -> String:

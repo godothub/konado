@@ -79,10 +79,15 @@ jobs:
       - name: Import project
         run: godot --headless --editor --path . --quit
 
+      - name: Test structured error feedback
+        run: |
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_runtime_failure_contract.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_error_registry.gd
+          python3 .github/scripts/run_godot_test.py tests/dialogue/test_error_gallery.gd
+
       - name: Test parser and dialogue services
         run: |
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_gdscript_architecture.gd
-          python3 .github/scripts/run_godot_test.py tests/dialogue/test_runtime_failure_contract.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_program_vm.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_lifecycle.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_external_reentry.gd
@@ -237,6 +242,9 @@ jobs:
         run: >-
           python .github/scripts/check_doc_resource_paths.py
           docs/zh/latest docs/en/latest docs/ja/latest docs/ko/latest docs/tc/latest
+
+      - name: Check structured error codes against sources and docs
+        run: python .github/scripts/check_error_codes.py
 
       - name: Check Konado.NET documentation contracts
         run: >-

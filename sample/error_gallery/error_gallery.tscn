@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://sample/error_gallery/error_gallery.gd" id="1_gallery"]
+[ext_resource type="PackedScene" uid="uid://buq324t8ugy0q" path="res://addons/konado/templates/default/dialogue_runtime.tscn" id="2_runtime"]
+
+[node name="ErrorGallery" type="Control" node_paths=PackedStringArray("dialogue_manager")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gallery")
+dialogue_manager = NodePath("KonadoDialogue")
+
+[node name="KonadoDialogue" parent="." instance=ExtResource("2_runtime")]
+layout_mode = 1
+initialize_on_ready = false

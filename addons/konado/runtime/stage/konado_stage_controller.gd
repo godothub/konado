@@ -224,6 +224,9 @@ func _ensure_stage_nodes() -> void:
 
 ## 返回舞台上的演员实例。
 func get_actor(actor_id: String) -> KonadoActor:
+	if actor_id.is_empty():
+		# 空 ID 不是有效演员名；同时避免把空串传给 Node.find_child（引擎会报错）。
+		return null
 	if actor_instances.has(actor_id):
 		var cached_node := actor_instances[actor_id]
 		if cached_node and is_instance_valid(cached_node):
@@ -323,16 +326,21 @@ func show_actor(
 	if actor_states.has(actor_id):
 		actor_states.erase(actor_id)
 
-	if character_scene == null:
+	# AC-001 / AC-014：空角色 ID 或未配置角色场景都无法建立角色，属于同一条入口拦截路径。
+	if character_scene == null or actor_id.strip_edges().is_empty():
+		var empty_id := actor_id.strip_edges().is_empty()
 		_last_failure = (
 			STAGE_FAILURE_REPORTER
-			. record_actor(
-				&"stage.actor_scene_missing",
-				"显示角色失败：角色[%s]没有配置角色场景" % actor_id,
-				"actor.show",
+			. record_actor_show(
+				&"stage.actor_id_empty" if empty_id else &"stage.actor_scene_missing",
+				(
+					"显示角色失败：角色 ID 不能为空（actor show 缺少角色名称）"
+					if empty_id
+					else "显示角色失败：角色[%s]没有配置角色场景" % actor_id
+				),
 				actor_id,
 				report_errors,
-				"目标状态=%s" % state,
+				"角色 ID 为空" if empty_id else "目标状态=%s" % state,
 			)
 		)
 		_emit_actor_shown(false, request_id)
@@ -352,15 +360,8 @@ func show_actor(
 	var node_name: String = str(actor_state["id"])
 	var temp_node: KonadoActor = _konado_actor_template.instantiate() as KonadoActor
 	if temp_node == null:
-		_last_failure = (
-			STAGE_FAILURE_REPORTER
-			. record_actor(
-				&"stage.actor_template_failed",
-				"显示角色失败：无法实例化演员模板",
-				"actor.show",
-				actor_id,
-				report_errors,
-			)
+		_last_failure = STAGE_FAILURE_REPORTER.record_actor_show(
+			&"stage.actor_template_failed", "显示角色失败：无法实例化演员模板", actor_id, report_errors
 		)
 		_emit_actor_shown(false, request_id)
 		return
@@ -377,48 +378,45 @@ func show_actor(
 	if not temp_node.set_motion_layer_scene(motion_layer_scene):
 		_last_failure = (
 			STAGE_FAILURE_REPORTER
-			. record_actor(
+			. record_actor_show(
 				&"stage.actor_motion_layer_invalid",
 				"显示角色失败：角色[%s]的动作层配置无效" % actor_id,
-				"actor.show",
 				actor_id,
 				report_errors,
 				"",
 				true,
 			)
 		)
+		_emit_actor_shown(false, request_id)
 		if _is_actor_state_request_current(actor_id, state_request_token):
 			_invalidate_actor_state_request(actor_id)
 		_discard_pending_actor(temp_node)
-		_emit_actor_shown(false, request_id)
 		return
 	if not temp_node.set_character_scene(character_scene, state):
 		_last_failure = (
 			STAGE_FAILURE_REPORTER
-			. record_actor(
+			. record_actor_show(
 				&"stage.actor_state_invalid",
 				"显示角色失败：角色[%s]无法应用状态[%s]" % [actor_id, state],
-				"actor.show",
 				actor_id,
 				report_errors,
 				"目标状态=%s" % state,
 				true,
 			)
 		)
+		_emit_actor_shown(false, request_id)
 		if _is_actor_state_request_current(actor_id, state_request_token):
 			_invalidate_actor_state_request(actor_id)
 		_discard_pending_actor(temp_node)
-		_emit_actor_shown(false, request_id)
 		return
 	if not _is_actor_state_request_current(actor_id, state_request_token):
 		# 初始化期间若同一演员已被更新请求取代，不允许旧请求进入场景树。
 		_discard_pending_actor(temp_node)
 		_last_failure = (
 			STAGE_FAILURE_REPORTER
-			. record_actor(
+			. record_actor_show(
 				&"stage.actor_request_superseded",
 				"显示角色失败：角色[%s]的请求已被更新操作取代" % actor_id,
-				"actor.show",
 				actor_id,
 				report_errors,
 			)
