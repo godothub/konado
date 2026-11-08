@@ -424,15 +424,19 @@ func _test_empty_dialogue_line_advances_in_autoplay() -> void:
 	var manager := await _create_manager()
 	manager.autoplay = true
 	manager.auto_play_delay = 0.05
+	var started_keys: Array[String] = []
+	manager.dialogue_line_start.connect(
+		func(instruction_id: String) -> void: started_keys.append(instruction_id)
+	)
 	manager.set_shot(_compile_shot('"Kona" "" [id=empty]\n"Kona" "L1" [id=l1]\nend'))
 	manager.start_dialogue()
-	await _wait_for_instruction_and_state(
-		manager, "ks:id:empty", KonadoDialogueManager.DialogState.WAITING
+	await _wait_for_condition(
+		func() -> bool: return manager.dialogue_state == KonadoDialogueManager.DialogState.OFF,
+		"autoplay reaches the end of the shot without manual input",
 	)
-	await _wait_for_instruction_and_state(
-		manager, "ks:id:l1", KonadoDialogueManager.DialogState.WAITING
-	)
-	_expect_equal(manager.dialogue_box.dialogue_text, "L1", "autoplay advances past the empty line")
+	_expect("ks:id:empty" in started_keys, "autoplay starts the empty line")
+	_expect("ks:id:l1" in started_keys, "autoplay advances past the empty line")
+	_expect(not manager._shot_active, "the shot finishes without manual input")
 	await _free_node(manager)
 
 
