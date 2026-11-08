@@ -24,6 +24,9 @@ func _run() -> void:
 	await _test_failed_recovery_preflight_is_non_destructive()
 	await _test_nested_condition_choice_reaches_branch()
 	await _test_set_shot_and_complete_dialogue()
+	await _test_empty_dialogue_line_can_advance()
+	await _test_empty_dialogue_line_advances_in_autoplay()
+	await _test_click_during_dialogue_box_show_does_not_skip_line()
 	await _test_visibility_commands_are_atomic()
 	await _test_screen_text_completion_lifecycle()
 	await _test_replacement_clears_pending_screen_text()
@@ -397,6 +400,70 @@ func _test_set_shot_and_complete_dialogue() -> void:
 	await _finish_current_dialogue(manager)
 	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
 	_expect(not manager._shot_active, "HALT closes the session exactly once")
+	await _free_node(manager)
+
+
+func _test_empty_dialogue_line_can_advance() -> void:
+	var manager := await _create_manager()
+	manager.set_shot(_compile_shot('"Kona" "" [id=empty]\n"Kona" "L1" [id=l1]\nend'))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:empty", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect(not manager._dialogue_typing, "an empty line has no typing animation to wait for")
+	await _finish_current_dialogue(manager)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l1", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(manager.dialogue_box.dialogue_text, "L1", "the next line is reached")
+	await _free_node(manager)
+
+
+## 空台词在自动播放模式下也必须排入自动推进，而不是停在空行等待点击。
+func _test_empty_dialogue_line_advances_in_autoplay() -> void:
+	var manager := await _create_manager()
+	manager.autoplay = true
+	manager.auto_play_delay = 0.05
+	manager.set_shot(_compile_shot('"Kona" "" [id=empty]\n"Kona" "L1" [id=l1]\nend'))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:empty", KonadoDialogueManager.DialogState.WAITING
+	)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l1", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(manager.dialogue_box.dialogue_text, "L1", "autoplay advances past the empty line")
+	await _free_node(manager)
+
+
+## 对话框淡入期间点击不能提前完成尚未显示的台词。
+func _test_click_during_dialogue_box_show_does_not_skip_line() -> void:
+	var manager := await _create_manager()
+	manager.auto_show_dialogue_box = true
+	manager.dialogue_box.fade_duration = 1.0
+	manager.dialogue_box.reset_dialogue_box()
+	manager.set_shot(_compile_shot('"Kona" "L1" [id=l1]\n"Kona" "L2" [id=l2]\nend'))
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l1", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect(manager._dialogue_typing, "the line is pending while the dialogue box fades in")
+	_expect_equal(manager.dialogue_box.dialogue_text, "", "the line is not shown before the fade")
+	manager._process_next()
+	await _wait_for_condition(
+		func() -> bool: return manager.dialogue_box.dialogue_text == "L1",
+		"the dialogue box finishes its show transition",
+	)
+	_expect_equal(
+		manager._current_instruction().stable_key(),
+		"ks:id:l1",
+		"a click during the show transition does not advance the line",
+	)
+	_expect_equal(manager.dialogue_box.dialogue_text, "L1", "the first line stays displayed")
+	await _finish_current_dialogue(manager)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l2", KonadoDialogueManager.DialogState.WAITING
+	)
 	await _free_node(manager)
 
 

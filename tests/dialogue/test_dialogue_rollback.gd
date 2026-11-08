@@ -10,6 +10,7 @@ func _run() -> void:
 	await _test_repeated_step_back_until_exhausted()
 	await _test_signal_is_crossed_and_replayed_with_a_variable_handler()
 	await _test_step_back_crosses_achievement_commands()
+	await _test_replayed_barrier_commands_keep_their_count()
 	await _test_step_back_crosses_cancellable_async_camera()
 	await _test_step_back_redraws_choice_and_records_new_selection()
 	await _test_step_back_past_a_choice_dismisses_the_option_buttons()
@@ -165,6 +166,62 @@ func _test_step_back_crosses_achievement_commands() -> void:
 	_expect(manager.timeline.can_step_back(), "achievement commands do not block a rewind")
 	_expect(manager.timeline.step_back(), "step back crosses achievement commands")
 	_expect_equal(manager.dialogue_box.dialogue_text, "L1", "landed on the previous line")
+	await _free_node(manager)
+
+
+## 同一条成就指令在回退区间内执行多次时，重放必须按次数跳过，
+## 不能只跳过第一次而让后续执行再次累加进度。
+func _test_replayed_barrier_commands_keep_their_count() -> void:
+	var manager := await _create_manager()
+	var achievement_manager: Node = manager._achievement_manager
+	_expect(achievement_manager != null, "the achievement autoload is available")
+	if achievement_manager == null:
+		await _free_node(manager)
+		return
+	manager.set_shot(
+		_compile_shot(
+			(
+				"set %i = 0\n"
+				+ '"Kona" "L0" [id=l0]\n'
+				+ "jump_branch loop\n"
+				+ "branch loop\n"
+				+ '\tachievement increment "explorer" 1\n'
+				+ "\tadd %i 1\n"
+				+ "\tif %i < 2:\n"
+				+ "\t\tjump_branch loop\n"
+				+ "\tendif\n"
+				+ '\t"Kona" "L1" [id=l1]\n'
+				+ "\tend"
+			)
+		)
+	)
+	manager.start_dialogue()
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l0", KonadoDialogueManager.DialogState.WAITING
+	)
+	var baseline := float(achievement_manager.get_progress("explorer"))
+	await _finish_current_dialogue(manager)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l1", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		achievement_manager.get_progress("explorer") - baseline,
+		2.0,
+		"the loop applies its progress twice",
+	)
+	_expect(manager.timeline.step_back(), "step back across the loop succeeds")
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l0", KonadoDialogueManager.DialogState.WAITING
+	)
+	await _finish_current_dialogue(manager)
+	await _wait_for_instruction_and_state(
+		manager, "ks:id:l1", KonadoDialogueManager.DialogState.WAITING
+	)
+	_expect_equal(
+		achievement_manager.get_progress("explorer") - baseline,
+		2.0,
+		"replaying the loop does not add progress again",
+	)
 	await _free_node(manager)
 
 
