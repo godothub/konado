@@ -237,10 +237,12 @@ func rollback(
 
 
 ## 登记“回退时已跨越、重放时不得重复执行”的不可逆指令键。
+## 同一指令在回退区间内可能执行多次（例如循环），因此按次数登记，
+## 重放时每遇到一次消费一次，避免只跳过第一次而让后续执行二次累计。
 func _prepare_rewind_skips(keys: PackedStringArray) -> void:
 	for key: String in keys:
 		if not key.is_empty():
-			_rewind_skip_keys[key] = true
+			_rewind_skip_keys[key] = int(_rewind_skip_keys.get(key, 0)) + 1
 
 
 ## 跳过键带上剧本来源路径，避免不同剧本复用相同稳定键时误用。
@@ -250,11 +252,16 @@ func _rewind_skip_key(instruction_key: String) -> String:
 
 
 func _should_skip_rewind(instruction_key: String) -> bool:
-	return _rewind_skip_keys.has(_rewind_skip_key(instruction_key))
+	return int(_rewind_skip_keys.get(_rewind_skip_key(instruction_key), 0)) > 0
 
 
 func _consume_rewind_skip(instruction_key: String) -> void:
-	_rewind_skip_keys.erase(_rewind_skip_key(instruction_key))
+	var key := _rewind_skip_key(instruction_key)
+	var remaining := int(_rewind_skip_keys.get(key, 0))
+	if remaining <= 1:
+		_rewind_skip_keys.erase(key)
+	else:
+		_rewind_skip_keys[key] = remaining - 1
 
 
 func create_checkpoint(label: String, state: Dictionary) -> String:

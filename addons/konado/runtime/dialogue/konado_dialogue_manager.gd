@@ -127,7 +127,6 @@ var pending_runtime_failure: Dictionary:
 var _achievement_manager: Node
 var _temp_variables: Dictionary = {}
 var _waiting_signal_name := ""
-var _dialog_data_id := 0
 var _story_localization: Node
 var _dialogue_services: RefCounted
 var _dialogue_history_coordinator: KonadoDialogueHistoryCoordinator
@@ -669,11 +668,15 @@ func _begin_dialogue_instruction(instruction: KonadoInstruction, token: Dictiona
 		dialogue_box.character_name = character
 		dialogue_box.dialogue_text = content
 		_history_coordinator().stage_dialogue(token, instruction, character, content)
-		_dialogue_typing = true
-		_typing_completed_callback = _on_dialogue_typing_completed.bind(token)
-		dialogue_box.typing_completed.connect(_typing_completed_callback, CONNECT_ONE_SHOT)
+		_dialogue_typing = not content.is_empty()  # 空台词没有打字动画，保持可点击的空行
+		if _dialogue_typing:
+			_typing_completed_callback = _on_dialogue_typing_completed.bind(token)
+			dialogue_box.typing_completed.connect(_typing_completed_callback, CONNECT_ONE_SHOT)
+		else:
+			_on_dialogue_typing_completed(token)  # 空台词立即视为打字完成，自动模式照常排队
 		_set_waiting_token(token)
 	if auto_show_dialogue_box and not dialogue_box.is_dialogue_box_visible():
+		_dialogue_typing = true  # 淡入完成前尚未开始打字，阻止点击提前完成这一句
 		dialogue_box.show_dialogue_box(begin)
 	else:
 		begin.call()
@@ -683,7 +686,6 @@ func _on_dialogue_typing_completed(token: Dictionary) -> void:
 	if not _token_is_active(token):
 		return
 	_dialogue_typing = false
-	_typing_completed_callback = Callable()
 	if autoplay:
 		var generation := _playback_generation
 		await get_tree().create_timer(auto_play_delay).timeout
