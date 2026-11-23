@@ -2,7 +2,7 @@ using Godot;
 
 namespace Konado.Runtime.Resources;
 
-/// <summary>Read-only wrapper for the compact Konado 2.8 executable Program.</summary>
+/// <summary>Read-only wrapper for the compact Konado 2.9 executable Program.</summary>
 public sealed partial class KonadoProgram : Resource
 {
 	private static GDScript? _sourceScript;

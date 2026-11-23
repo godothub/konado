@@ -1,3 +1,19 @@
+## 2.9.0
+
+### New Features
+
+- Added `call` / `return` subroutine statements: call a branch, return to the next line, support nesting, rollback, and save/load
+- Added conditional choices (`choice "..." -> branch if %variable >= value`) and one-time choices (`choice "..." -> branch once`)
+- A menu whose options are all filtered by `if` / `once` now continues with the statement after the choice group instead of showing an empty menu
+
+### Compatibility
+
+- Konado 2.9 does **not** read 2.8 saves or previously exported script data: `KonadoProgram.COMPILER_ABI` is `konado-2.9`, the command schema is 4, and the runtime state schema is 3. Old saves fail explicitly instead of loading with empty state.
+- `call_stack` and `choices` are required runtime-state domains; a state without them is rejected by validation.
+- Reopen the project so `.ks` files recompile, and re-export the game when upgrading from 2.8.
+- `once` usage is runtime state and participates in rollback, checkpoints, and saves; `init_dialogue()` clears it for a new game
+- Recursive `call` graphs are rejected at compile time, and `jump` discards pending call frames
+
 ## 2.8.1 - Nanguoli
 
 ### Feature Updates
@@ -7,6 +23,7 @@
 - Added stable error IDs for actor, background, audio, camera, script, variable, compilation, resource, and achievement failures
 - Error reports identify the failing function, file, resource, and script line; single-line compilation now also preserves the source path to help locate problems
 - Added `KonadoResult` to represent successful data and structured errors consistently, making execution results easier for callers to handle
+- Added `call` / `return` subroutine statements: a branch can be called, returns to the next line, nests, survives rollback and save/load, and rejects recursive call graphs at compile time
 
 ### Bug Fixes
 

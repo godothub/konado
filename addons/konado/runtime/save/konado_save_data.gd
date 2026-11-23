@@ -1,6 +1,6 @@
 class_name KonadoSaveData
 
-## Konado 2.8 save envelope. The payload always references an exact Program
+## Konado 2.9 save envelope. The payload always references an exact Program
 ## fingerprint and an atomic execution boundary.
 
 const FORMAT_VERSION := 2

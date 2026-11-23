@@ -1,3 +1,8 @@
+## 2.9.0
+
+- Track the KonadoScript 2.9 grammar and language services: `call` / `return`,
+  conditional choices (`choice ... if`), and one-time choices (`choice ... once`).
+
 ## 2.8.0
 
 - Updated dialogue syntax, named parameters, diagnostics, and project symbol navigation for KonadoScript 2.8.
