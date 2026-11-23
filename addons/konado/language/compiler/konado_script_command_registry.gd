@@ -3,10 +3,11 @@ class_name KonadoScriptCommandRegistry
 
 ## Canonical KonadoScript command contract shared by compiler, IDE and VM.
 
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := 4
 const STRING := "string"
 const STRING_ARRAY := "string_array"
 const CHOICES := "choices"
+const FILTERS := "filters"
 const VALUE := "value"
 
 const ROLLBACK_REVERSIBLE := "reversible"
@@ -53,6 +54,8 @@ const RUNTIME_HANDLERS := {
 	KonadoOpcode.Type.CAMERA_RESET_ASYNC: &"_camera_reset_async",
 	KonadoOpcode.Type.CAMERA_SHAKE_ASYNC: &"_camera_shake_async",
 	KonadoOpcode.Type.CAMERA_STOP_ASYNC: &"_camera_stop_async",
+	KonadoOpcode.Type.CALL_BRANCH: &"_call_branch",
+	KonadoOpcode.Type.RETURN: &"_return",
 }
 
 const RESOURCE_OPERANDS := {
@@ -87,6 +90,9 @@ const STATE_DOMAINS := {
 	KonadoOpcode.Type.SCREEN_TEXT: [&"screen_text"],
 	KonadoOpcode.Type.TEXTBOX_SHOW: [&"dialogue_box"],
 	KonadoOpcode.Type.TEXTBOX_HIDE: [&"dialogue_box"],
+	KonadoOpcode.Type.CALL_BRANCH: [&"execution"],
+	KonadoOpcode.Type.RETURN: [&"execution"],
+	KonadoOpcode.Type.CHOICE: [&"choices"],
 }
 
 const COMMANDS := {
@@ -192,7 +198,7 @@ const COMMANDS := {
 	"choice":
 	{
 		"opcode": KonadoOpcode.Type.CHOICE,
-		"operands": [["options", CHOICES, true]],
+		"operands": [["options", CHOICES, true], ["filters", FILTERS, false]],
 		"parameters": {},
 		"blocking": true,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -223,6 +229,25 @@ const COMMANDS := {
 	{
 		"opcode": KonadoOpcode.Type.JUMP_BRANCH,
 		"operands": [["branch", STRING, false]],
+		"parameters": {},
+		"blocking": false,
+		"rollback": ROLLBACK_REVERSIBLE
+	},
+	"call.branch":
+	{
+		"opcode": KonadoOpcode.Type.CALL_BRANCH,
+		"operands": [["branch", STRING, false]],
+		"parameters": {},
+		"blocking": false,
+		# 调用本身完全可回退：返回点保存在运行期调用栈里，随 delta/快照一起还原。
+		# 注意：失败恢复不能提供 skip —— next_pc 指向被调分支入口而不是调用点之后，
+		# 跳过会把控制流带进没有返回帧的分支（见 KonadoRuntimeFailureSession）。
+		"rollback": ROLLBACK_REVERSIBLE
+	},
+	"return":
+	{
+		"opcode": KonadoOpcode.Type.RETURN,
+		"operands": [],
 		"parameters": {},
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
@@ -399,6 +424,10 @@ static func command_for_node(node: KonadoScriptSyntaxTree.ASTNode) -> String:
 		return "jump.script"
 	if node is KonadoScriptSyntaxTree.JumpBranchNode:
 		return "jump.branch"
+	if node is KonadoScriptSyntaxTree.CallNode:
+		return "call.branch"
+	if node is KonadoScriptSyntaxTree.ReturnNode:
+		return "return"
 	if node is KonadoScriptSyntaxTree.SignalNode:
 		return "signal"
 	if node is KonadoScriptSyntaxTree.AchievementNode:

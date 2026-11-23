@@ -45,7 +45,17 @@ func _get_reserved_words() -> PackedStringArray:
 
 
 func _is_control_flow_keyword(keyword: String) -> bool:
-	return keyword in ["if", "else", "endif", "choice", "branch", "jump", "jump_branch"]
+	return keyword in [
+		"if",
+		"else",
+		"endif",
+		"choice",
+		"branch",
+		"jump",
+		"jump_branch",
+		"call",
+		"return",
+	]
 
 
 func _get_comment_delimiters() -> PackedStringArray:
@@ -415,8 +425,22 @@ func _get_completion_candidates(source: String, line_prefix: String) -> Array[Di
 			)
 		elif root_keyword == "jump_branch" and argument_index == 1:
 			candidates = _make_candidates(_get_branch_names(source), partial)
-		elif root_keyword == "choice" and "->" in tokens:
+		elif root_keyword == "call" and argument_index == 1:
 			candidates = _make_candidates(_get_branch_names(source), partial)
+		elif root_keyword == "choice" and "->" in tokens:
+			# 分支名之后是可选后缀：if <条件> / once。
+			if argument_index >= 4:
+				var suffix_region := tokens.slice(4)
+				if not ends_with_space and suffix_region.size() > 0:
+					suffix_region = suffix_region.slice(0, suffix_region.size() - 1)
+				var suffixes := PackedStringArray()
+				if "if" not in suffix_region:
+					suffixes.append("if")
+				if "once" not in suffix_region:
+					suffixes.append("once")
+				candidates = _make_candidates(suffixes, partial)
+			else:
+				candidates = _make_candidates(_get_branch_names(source), partial)
 		elif root_keyword == "jump" and argument_index == 1:
 			candidates = _make_candidates(
 				_project_index.get_values("scripts"),
@@ -585,6 +609,8 @@ func _registry_command_for_spans(token_spans: Array[Dictionary]) -> String:
 				"div": "variable",
 				"jump": "jump.script",
 				"jump_branch": "jump.branch",
+				"call": "call.branch",
+				"return": "return",
 				"signal": "signal",
 				"end": "halt",
 			}
@@ -643,6 +669,8 @@ func _is_complete_parameterized_statement(token_spans: Array[Dictionary]) -> boo
 		"div": 3,
 		"jump": 2,
 		"jump_branch": 2,
+		"call": 2,
+		"return": 1,
 		"signal": 2,
 		"achievement unlock": 3,
 		"achievement increment": 4,
@@ -681,7 +709,7 @@ func _infer_completion_kind(
 	argument_index: int,
 ) -> CodeEdit.CodeCompletionKind:
 	var kind := CodeEdit.CodeCompletionKind.KIND_KEYWORD
-	if root_keyword in ["jump_branch", "choice"]:
+	if root_keyword in ["jump_branch", "choice", "call"]:
 		kind = CodeEdit.CodeCompletionKind.KIND_FUNCTION
 	elif root_keyword in ["set", "add", "sub", "mul", "div", "if"] and argument_index == 1:
 		kind = CodeEdit.CodeCompletionKind.KIND_VARIABLE

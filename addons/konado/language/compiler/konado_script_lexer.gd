@@ -49,8 +49,10 @@ func tokenize(source: String, path: String = "") -> RefCounted:
 		if _errors.size() >= MAX_DIAGNOSTICS:
 			return tokens
 		var raw_line := String(lines[i])
+		# Windows 换行会留下 CR；它不属于脚本内容，必须在分词前剥离。
+		var line_text := raw_line.trim_suffix("\r")
 		var line_num := i + 1
-		var stripped := raw_line.strip_edges()
+		var stripped := line_text.strip_edges()
 
 		# 空行与注释行跳过
 		if stripped.is_empty() or stripped.begins_with("#"):
@@ -59,7 +61,7 @@ func tokenize(source: String, path: String = "") -> RefCounted:
 
 		# 只在缩进层级发生变化时发射结构 Token。这样 Parser 能准确区分
 		# 同级语句、子块和块结束，而不是把每个带空白的行都当成“某种缩进”。
-		var indentation := _measure_indentation(raw_line, line_num)
+		var indentation := _measure_indentation(line_text, line_num)
 		if not indentation["valid"]:
 			line_offset += raw_line.length() + 1
 			continue
@@ -92,8 +94,8 @@ func tokenize(source: String, path: String = "") -> RefCounted:
 				continue
 
 		# 对该行内容进行词法分析
-		var content := raw_line.strip_edges(true, false)
-		var leading_columns := raw_line.length() - content.length()
+		var content := line_text.strip_edges(true, false)
+		var leading_columns := line_text.length() - content.length()
 		_column_offset = leading_columns
 		var error_count := _errors.size()
 		var line_tokens := _tokenize_line(content, line_num)
@@ -113,9 +115,9 @@ func tokenize(source: String, path: String = "") -> RefCounted:
 
 		# 行结束标记
 		var newline := KonadoScriptToken.new(
-			KonadoScriptToken.Type.NEWLINE, "", line_num, raw_line.length() + 1
+			KonadoScriptToken.Type.NEWLINE, "", line_num, line_text.length() + 1
 		)
-		newline.start_offset = line_offset + raw_line.length()
+		newline.start_offset = line_offset + line_text.length()
 		newline.end_offset = newline.start_offset + 1
 		tokens.append(newline)
 		line_offset += raw_line.length() + 1
@@ -139,6 +141,8 @@ func tokenize_line(line: String, line_number: int) -> Array[KonadoScriptToken]:
 	_errors.clear()
 	_diagnostics.clear()
 	_path = ""
+	# 单行预览/索引同样要剥离 Windows 行尾 CR。
+	line = line.trim_suffix("\r")
 	var stripped := line.strip_edges(true, false)
 	if stripped.is_empty():
 		return [KonadoScriptToken.new(KonadoScriptToken.Type.EOF, "", line_number, 0)]

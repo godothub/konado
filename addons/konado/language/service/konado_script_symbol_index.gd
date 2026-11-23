@@ -211,6 +211,8 @@ static func _references_from_spans(
 			_append_argument_reference(references, tokens, 1, "branches", "", "definition")
 		"jump_branch":
 			_append_argument_reference(references, tokens, 1, "branches")
+		"call":
+			_append_argument_reference(references, tokens, 1, "branches")
 		"jump":
 			_append_argument_reference(references, tokens, 1, "scripts")
 		"choice":
@@ -218,6 +220,26 @@ static func _references_from_spans(
 				if String(tokens[index]["text"]) == "->":
 					_append_argument_reference(references, tokens, index + 1, "branches")
 					break
+			# `choice ... if %var op %other` 里的两个变量也要进入引用索引，
+			# 否则重命名变量会漏掉菜单条件。
+			for index: int in tokens.size():
+				if String(tokens[index]["text"]) != "if":
+					continue
+				var variable_index := index + 1
+				var variable_text := (
+					String(tokens[variable_index]["text"])
+					if variable_index < tokens.size()
+					else ""
+				)
+				if variable_text.begins_with("%") or variable_text.begins_with("$"):
+					_append_argument_reference(references, tokens, variable_index, "variables")
+				var value_index := index + 3
+				var value_text := (
+					String(tokens[value_index]["text"]) if value_index < tokens.size() else ""
+				)
+				if value_text.begins_with("%") or value_text.begins_with("$"):
+					_append_argument_reference(references, tokens, value_index, "variables")
+				break
 		"set":
 			_append_argument_reference(references, tokens, 1, "variables", "", "definition")
 		"add", "sub", "mul", "div", "if":

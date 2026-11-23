@@ -70,6 +70,7 @@ func value(name: StringName, default: Variant = null) -> Variant:
 
 func _decode_choices(encoded: Array) -> Array[Dictionary]:
 	var choices: Array[Dictionary] = []
+	var option_index := 0
 	for index in range(0, encoded.size(), 2):
 		(
 			choices
@@ -77,7 +78,10 @@ func _decode_choices(encoded: Array) -> Array[Dictionary]:
 				{
 					"text": _program.constant_at(int(encoded[index])),
 					"target_pc": _program.pc_for_key(String(encoded[index + 1])),
+					# 组内序号：`once` 身份与本地化对齐都依赖它。
+					"index": option_index,
 				}
 			)
 		)
+		option_index += 1
 	return choices

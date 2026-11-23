@@ -40,8 +40,18 @@ func analyze(program: KonadoProgram) -> bool:
 		_validate(program, pc, before)
 		var after := _transfer(program, pc, before)
 		for target in _targets(program, pc):
+			var edge_state := after
+			if (
+				program.opcode_at(pc) == KonadoOpcode.Type.CALL_BRANCH
+				and target == program.true_pcs[pc]
+			):
+				# 返回点：被调分支的执行结果无法在单文件里精确知道，
+				# 只放宽后续检查，绝不据此产生错误。
+				edge_state = _copy(after)
+				edge_state["unknown_temps"] = true
+				edge_state["unknown_actors"] = true
 			var first_visit := not has_state.has(target)
-			var merged := _copy(after) if first_visit else _merge(incoming[target], after)
+			var merged := _copy(edge_state) if first_visit else _merge(incoming[target], edge_state)
 			if first_visit or merged != incoming[target]:
 				incoming[target] = merged
 				has_state[target] = true
@@ -60,7 +70,16 @@ func get_warnings() -> Array[String]:
 
 
 func _empty_state() -> Dictionary:
-	return {"actor_must": {}, "actor_may": {}, "temp_must": {}, "temp_types": {}}
+	return {
+		"actor_must": {},
+		"actor_may": {},
+		"temp_must": {},
+		"temp_types": {},
+		# call 返回后，被调分支可能已经定义/改写了任意临时变量与演员，
+		# 单文件数据流无法精确建模，因此这两个标记让后续检查保持保守（不误报）。
+		"unknown_temps": false,
+		"unknown_actors": false,
+	}
 
 
 func _copy(state: Dictionary) -> Dictionary:
@@ -69,6 +88,8 @@ func _copy(state: Dictionary) -> Dictionary:
 		"actor_may": state["actor_may"].duplicate(),
 		"temp_must": state["temp_must"].duplicate(),
 		"temp_types": state["temp_types"].duplicate(true),
+		"unknown_temps": bool(state.get("unknown_temps", false)),
+		"unknown_actors": bool(state.get("unknown_actors", false)),
 	}
 
 
@@ -92,6 +113,7 @@ func _validate(program: KonadoProgram, pc: int, state: Dictionary) -> void:
 		if (
 			not persistent
 			and operation != KonadoVariableStore.Operation.SET
+			and not bool(state["unknown_temps"])
 			and not state["temp_must"].has(name)
 		):
 			_error(program, pc, "临时变量 '$%s' 在当前所有路径上尚未定义" % name)
@@ -107,7 +129,7 @@ func _validate(program: KonadoProgram, pc: int, state: Dictionary) -> void:
 	if opcode == KonadoOpcode.Type.CONDITION:
 		if not bool(instruction.value(&"persistent")):
 			var name := String(instruction.value(&"variable"))
-			if not state["temp_must"].has(name):
+			if not bool(state["unknown_temps"]) and not state["temp_must"].has(name):
 				_error(program, pc, "条件引用的临时变量 '$%s' 在当前所有路径上尚未定义" % name)
 		_validate_reference(program, pc, instruction.value(&"target"), state)
 		_validate_condition_types(program, pc, instruction, state)
@@ -116,16 +138,51 @@ func _validate(program: KonadoProgram, pc: int, state: Dictionary) -> void:
 		var speaker := String(instruction.value(&"speaker"))
 		if (
 			speaker_kind == KonadoScriptSyntaxTree.DialogueNode.SpeakerKind.TEMPORARY_VARIABLE
+			and not bool(state["unknown_temps"])
 			and not state["temp_must"].has(speaker)
 		):
 			_error(program, pc, "对话署名引用的临时变量 '$%s' 在当前所有路径上尚未定义" % speaker)
-		elif speaker_kind == KonadoScriptSyntaxTree.DialogueNode.SpeakerKind.TEMPORARY_VARIABLE:
+		elif (
+			speaker_kind == KonadoScriptSyntaxTree.DialogueNode.SpeakerKind.TEMPORARY_VARIABLE
+			and not bool(state["unknown_temps"])
+		):
 			var speaker_type := String(state["temp_types"].get(speaker, "unknown"))
 			if speaker_type not in ["string", "unknown", "variant"]:
 				_error(program, pc, "对话署名变量 '$%s' 必须保存字符串演员 ID" % speaker)
+	if opcode == KonadoOpcode.Type.CHOICE:
+		_validate_choice_filters(program, pc, instruction, state)
+
+
+## choice 的 `if <条件>` 参与与 if 语句相同的临时变量可定义性检查。
+func _validate_choice_filters(
+	program: KonadoProgram, pc: int, instruction: KonadoInstruction, state: Dictionary
+) -> void:
+	var filters: Variant = instruction.value(&"filters", [])
+	if not filters is Array:
+		return
+	for filter: Variant in filters:
+		if not filter is Dictionary:
+			continue
+		var condition: Variant = (filter as Dictionary).get("condition", {})
+		if not condition is Dictionary:
+			continue
+		var condition_dict: Dictionary = condition
+		if condition_dict.is_empty():
+			continue
+		var name := String(condition_dict.get("name", ""))
+		if (
+			not bool(condition_dict.get("persistent", false))
+			and not bool(state["unknown_temps"])
+			and not state["temp_must"].has(name)
+		):
+			_error(program, pc, "choice 条件引用的临时变量 '$%s' 在当前所有路径上尚未定义" % name)
+		_validate_reference(program, pc, condition_dict.get("value"), state)
 
 
 func _validate_actor(program: KonadoProgram, pc: int, actor: String, state: Dictionary) -> void:
+	# call 返回后无法知道被调分支展示/移除了哪些演员，跳过而非误报。
+	if bool(state.get("unknown_actors", false)):
+		return
 	if state["actor_must"].has(actor):
 		return
 	if state["actor_may"].has(actor):
@@ -141,6 +198,8 @@ func _validate_actor(program: KonadoProgram, pc: int, actor: String, state: Dict
 func _validate_reference(
 	program: KonadoProgram, pc: int, value: Variant, state: Dictionary
 ) -> void:
+	if bool(state.get("unknown_temps", false)):
+		return
 	if not value is Dictionary or value.get("kind") != "variable":
 		return
 	if bool(value.get("persistent", false)):
@@ -153,6 +212,9 @@ func _validate_reference(
 func _validate_variable_types(
 	program: KonadoProgram, pc: int, instruction: KonadoInstruction, state: Dictionary
 ) -> void:
+	# 被调分支可能改写了同一变量的类型；调用之后不再做类型推断。
+	if bool(state.get("unknown_temps", false)):
+		return
 	var operation := int(instruction.value(&"operation"))
 	if operation == KonadoVariableStore.Operation.SET:
 		return
@@ -178,6 +240,8 @@ func _validate_variable_types(
 func _validate_condition_types(
 	program: KonadoProgram, pc: int, instruction: KonadoInstruction, state: Dictionary
 ) -> void:
+	if bool(state.get("unknown_temps", false)):
+		return
 	var operator := int(instruction.value(&"operator"))
 	if operator in [0, 5] or bool(instruction.value(&"persistent")):
 		return
@@ -239,6 +303,12 @@ func _merge(left: Dictionary, right: Dictionary) -> Dictionary:
 		"actor_may": _union(left["actor_may"], right["actor_may"]),
 		"temp_must": _intersection(left["temp_must"], right["temp_must"]),
 		"temp_types": _merge_types(left["temp_types"], right["temp_types"]),
+		"unknown_temps": (
+			bool(left.get("unknown_temps", false)) or bool(right.get("unknown_temps", false))
+		),
+		"unknown_actors": (
+			bool(left.get("unknown_actors", false)) or bool(right.get("unknown_actors", false))
+		),
 	}
 
 

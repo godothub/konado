@@ -3,7 +3,7 @@ class_name KonadoRuntimeState
 
 ## Serializable VM state. Scene nodes and signal connections never enter a snapshot.
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 const MAX_SNAPSHOT_ACTORS := 256
 
 const DOMAIN_EXECUTION := &"execution"
@@ -15,6 +15,8 @@ const DOMAIN_STAGE := &"stage"
 const DOMAIN_AUDIO := &"audio"
 const DOMAIN_CAMERA := &"camera"
 const DOMAIN_RANDOM_STATE := &"random_state"
+## `once` 选项的使用记录（菜单集）。与脚本变量分开存放，但仍属于运行期状态。
+const DOMAIN_CHOICES := &"choices"
 
 const ALL_DOMAINS := [
 	DOMAIN_EXECUTION,
@@ -26,6 +28,7 @@ const ALL_DOMAINS := [
 	DOMAIN_AUDIO,
 	DOMAIN_CAMERA,
 	DOMAIN_RANDOM_STATE,
+	DOMAIN_CHOICES,
 ]
 const ACTOR_STATE_OPCODES := [
 	KonadoOpcode.Type.ACTOR_SHOW,
@@ -58,6 +61,7 @@ static func capture_domains(
 						if manager.current_shot != null
 						else ""
 					),
+					"call_stack": manager._vm.export_call_stack(),
 				}
 			DOMAIN_TEMPORARY_VARIABLES:
 				result[domain] = manager._temp_variables.duplicate(true)
@@ -93,6 +97,8 @@ static func capture_domains(
 				)
 			DOMAIN_RANDOM_STATE:
 				result[domain] = manager._rng.state
+			DOMAIN_CHOICES:
+				result[domain] = manager._used_choices.duplicate(true)
 	return result
 
 
@@ -212,6 +218,8 @@ static func validate(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 		or String(execution.get("program_fingerprint", "")).is_empty()
 	):
 		return false
+	if not execution.has("call_stack") or not _validate_call_stack(execution["call_stack"]):
+		return false
 	for key in [
 		"temporary_variables",
 		"persistent_variables",
@@ -225,6 +233,8 @@ static func validate(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 			return false
 	if not state.get("random_state", 0) is int:
 		return false
+	if not state.has("choices") or not state["choices"] is Dictionary:
+		return false
 	if not _validate_stage(state.get("stage", {}), manager):
 		return false
 	if not _validate_audio(state.get("audio", {}), manager):
@@ -237,7 +247,12 @@ static func validate(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 static func restore(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 	if not validate(state, manager):
 		return false
+	# 先恢复调用栈：它是执行位置的一部分，非法帧必须整体拒绝而不是跳到错误 pc。
+	var execution: Dictionary = state.get("execution", {})
+	if not manager._vm.restore_call_stack(execution["call_stack"]):
+		return false
 	manager._temp_variables = state.get("temporary_variables", {}).duplicate(true)
+	manager._used_choices = state["choices"].duplicate(true)
 	manager._waiting_signal_name = ""
 	manager._rng.state = int(state.get("random_state", manager._rng.state))
 	if manager.variable_store != null:
@@ -283,6 +298,27 @@ static func _restore_stage(state: Dictionary, manager: KonadoDialogueManager) ->
 	if not highlighted.is_empty():
 		acting.highlight_actor(highlighted)
 	return valid
+
+
+## 调用栈是 2.9 运行期状态的必需字段；2.8 存档在版本校验阶段就会被拒绝。
+static func _validate_call_stack(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	var frames: Array = value
+	if frames.size() > KonadoVirtualMachine.MAX_CALL_DEPTH:
+		return false
+	for entry: Variant in frames:
+		if not entry is Dictionary:
+			return false
+		var frame: Dictionary = entry
+		var return_pc: Variant = frame.get("return_pc", null)
+		if not return_pc is int or int(return_pc) < 0:
+			return false
+		if not frame.get("key", "") is String:
+			return false
+		if not frame.get("program", "") is String:
+			return false
+	return true
 
 
 static func _validate_stage(state: Dictionary, manager: KonadoDialogueManager) -> bool:

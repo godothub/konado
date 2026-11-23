@@ -73,6 +73,9 @@ func available_actions() -> PackedStringArray:
 		elif (
 			rollback_policy == KonadoScriptCommandRegistry.ROLLBACK_REVERSIBLE
 			and instruction.next_pc() != KonadoProgram.INVALID_PC
+			# call 的 next_pc 是“被调分支入口”，不是调用点之后的指令；跳过 call 会
+			# 进入没有返回帧的分支，因此这里只允许 retry / stop。
+			and instruction.opcode() != KonadoOpcode.Type.CALL_BRANCH
 		):
 			actions.append(ACTION_SKIP)
 	actions.append(ACTION_STOP)

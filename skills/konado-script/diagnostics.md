@@ -1,12 +1,14 @@
 # 静态诊断与快速修复
 
-KonadoScript 2.8 使用与 Godot 编辑器、VS Code 扩展相同的编译与项目索引语义。诊断代码是稳定的机器标识；面向用户的消息会跟随编辑器语言显示。
+KonadoScript 2.9 使用与 Godot 编辑器、VS Code 扩展相同的编译与项目索引语义。诊断代码是稳定的机器标识；面向用户的消息会跟随编辑器语言显示。
 
 ## 语法与结构
 
 - 检查未闭合字符串、未知语法、缺失操作数和无效运算符。
 - 检查 `if` / `else` / `endif`、`screentext { ... }` 等块结构。条件块允许嵌套。
-- 检查 `choice "文本" -> branch_id`、`jump`、`jump_branch` 和 `branch` 的结构。
+- 检查 `choice "文本" -> branch_id`、`jump`、`jump_branch`、`call`、`return` 和 `branch` 的结构。
+- 检查 `choice` 的 `if` 条件与 `once` 后缀：重复后缀、缺失运算符/比较值、条件变量未定义都会报错。
+- 检查 `call` 的目标分支是否存在，并拒绝直接或间接的递归调用（调用链上限 256 层）。
 - 检查命名参数的名称、类型、重复项和互斥项；例如对话的 `speed` 与 `interval` 不能同时出现。
 
 ## 符号、跳转与控制流

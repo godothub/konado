@@ -36,6 +36,8 @@ enum Type {
 	KW_SHOWTEXTBOX,
 	KW_HIDETEXTBOX,
 	KW_WAITSIGNAL,
+	KW_CALL,
+	KW_RETURN,
 	# 子关键字
 	KW_SHOW,
 	KW_EXIT,
@@ -92,6 +94,8 @@ const KEYWORDS: Dictionary = {
 	"div": Type.KW_DIV,
 	"jump": Type.KW_JUMP,
 	"jump_branch": Type.KW_JUMP_BRANCH,
+	"call": Type.KW_CALL,
+	"return": Type.KW_RETURN,
 	"signal": Type.KW_SIGNAL,
 	"achievement": Type.KW_ACHIEVEMENT,
 	"end": Type.KW_END,

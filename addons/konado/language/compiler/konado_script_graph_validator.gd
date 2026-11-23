@@ -39,11 +39,34 @@ func validate_program(program: KonadoProgram) -> bool:
 				_errors.append(_program_at(program, pc, "选项指令没有有效选项"))
 			elif choices.size() / 2 > MAX_CHOICES_PER_INSTRUCTION:
 				_errors.append(_program_at(program, pc, "单组选项超过 256 个安全上限"))
+			# true_pcs = 选择组之后的位置（全部选项被过滤时继续执行）。
+			_validate_required_pc(program, program.true_pcs[pc], pc, "选项继续")
+			var filters_value: Variant = program.operand_at(pc, 1, [])
+			if not filters_value is Array:
+				_errors.append(_program_at(program, pc, "选项过滤表必须是数组"))
+			elif (filters_value as Array).size() * 2 != choices.size():
+				_errors.append(_program_at(program, pc, "选项过滤表与选项数量不一致"))
+			else:
+				for filter: Variant in (filters_value as Array):
+					if not filter is Dictionary:
+						_errors.append(_program_at(program, pc, "选项过滤项必须是字典"))
+						break
+					var condition: Variant = (filter as Dictionary).get("condition", {})
+					if not condition is Dictionary:
+						_errors.append(_program_at(program, pc, "选项条件必须是字典"))
+						break
 			for index in range(1, choices.size(), 2):
 				var target_pc := program.pc_for_key(String(choices[index]))
 				_validate_required_pc(program, target_pc, pc, "选项目标")
 		elif opcode == KonadoOpcode.Type.JUMP_BRANCH:
 			_validate_required_pc(program, program.next_pcs[pc], pc, "jump_branch")
+		elif opcode == KonadoOpcode.Type.CALL_BRANCH:
+			# next_pcs = 被调用分支入口；true_pcs = 返回点（调用点之后的指令）。
+			_validate_required_pc(program, program.next_pcs[pc], pc, "call 目标")
+			_validate_required_pc(program, program.true_pcs[pc], pc, "call 返回点")
+		elif opcode == KonadoOpcode.Type.RETURN:
+			# return 没有静态后继：目标来自运行期调用栈。
+			pass
 		elif not KonadoOpcode.is_terminal(opcode):
 			_validate_required_pc(program, program.next_pcs[pc], pc, "next")
 	if _errors.is_empty():
@@ -66,7 +89,9 @@ func _validate_reachability_and_exit(program: KonadoProgram) -> void:
 	_warn_unreachable_regions(program, forward, reverse, reachable)
 	var terminals := PackedInt32Array()
 	for pc in range(program.instruction_count()):
-		if KonadoOpcode.is_terminal(program.opcode_at(pc)):
+		var opcode := program.opcode_at(pc)
+		# return 是“本程序内的终止点”：控制权交给调用者，不需要在本程序里再到达 halt。
+		if KonadoOpcode.is_terminal(opcode) or opcode == KonadoOpcode.Type.RETURN:
 			terminals.append(pc)
 	var reaches_terminal := _walk_graph(reverse, terminals)
 	for pc in reachable:

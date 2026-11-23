@@ -43,6 +43,15 @@ const EXACT_ENGLISH: Dictionary = {
 	"choice 缺少选项文本": "choice requires option text.",
 	"choice 缺少 -> 运算符": "choice requires the -> operator.",
 	"choice 缺少目标分支名": "choice requires a target branch.",
+	"choice 条件缺少变量引用（格式：choice \"文本\" -> 分支 if %变量名 == 值）":
+	(
+		"choice conditions require a variable reference (format: choice \"text\" -> branch if "
+		+ "%variable == value)."
+	),
+	"choice 条件缺少比较运算符": "choice conditions require a comparison operator.",
+	"choice 条件缺少目标值": "choice conditions require a comparison value.",
+	"choice 条件重复": "A choice can only declare one condition.",
+	"choice once 重复": "A choice can only declare once once.",
 	"branch 缺少标签ID": "branch requires an identifier.",
 	"if 条件缺少变量引用（格式：if %变量名 == 值:）":
 	"if requires a variable reference (format: if %variable == value:).",
@@ -85,6 +94,11 @@ const EXACT_ENGLISH: Dictionary = {
 	"jump 缺少目标路径": "jump requires a target script path.",
 	"jump 目标必须是 res:// 下的 .ks 文件": "jump requires a .ks file under res://.",
 	"jump_branch 缺少目标分支名": "jump_branch requires a target branch.",
+	"call 缺少目标分支名": "call requires a target branch.",
+	"call 目标必须是本剧本内有效的分支标识符（跨剧本调用暂不支持，请使用 jump）":
+	"call requires a branch identifier in the current script; use jump for another script.",
+	"call 目标分支后存在多余内容": "Unexpected content after the call target.",
+	"return 后存在多余内容": "Unexpected content after return.",
 	"signal 缺少信号内容": "signal requires a signal name.",
 	"achievement 缺少操作类型": "achievement requires an action.",
 	"achievement increment 缺少增量数值": "achievement increment requires an amount.",
@@ -104,6 +118,7 @@ const DYNAMIC_TRANSLATION_SAMPLES := [
 	"cam 未知操作: fly（应为 move、reset 或 shake）",
 	"asyncam 未知操作: fly（应为 move、reset、shake 或 stop）",
 	"if 条件的比较运算符无效: =",
+	"choice 条件的比较运算符无效: =",
 	"镜头过渡类型无效：instant",
 	"set 变量值后存在多余内容",
 	"set 缺少变量名（格式：set %变量名 值）",
@@ -113,6 +128,10 @@ const DYNAMIC_TRANSLATION_SAMPLES := [
 	"branch 标签 'intro' 重复",
 	"跳转标签 'missing' 不存在（当前可选标签：[intro]）",
 	"jump_branch 目标分支 'missing' 未找到",
+	"call 目标分支 'missing' 未找到",
+	"call 目标分支 'missing' 不存在或为空",
+	"call 形成递归调用环：a → a",
+	"call 调用链超过 256 层安全上限",
 	"jump 目标剧本 'res://missing.ks' 不存在",
 	"目标效果 'unknown' 未找到",
 	"角色 'Kona' 在部分路径上不存在，无法安全移动",
@@ -217,6 +236,11 @@ static func _ensure_dynamic_rules() -> void:
 		"syntax.comparison_operator",
 	)
 	_add_rule(
+		"^choice 条件的比较运算符无效: (.+)$",
+		"Invalid choice comparison operator: %s.",
+		"syntax.comparison_operator",
+	)
+	_add_rule(
 		"^镜头过渡类型无效：(.+)$",
 		"Invalid camera transition: %s.",
 		"syntax.camera_transition",
@@ -260,6 +284,26 @@ static func _ensure_dynamic_rules() -> void:
 		"^jump_branch 目标分支 '(.+)' 未找到$",
 		"Target branch '%s' was not found.",
 		"semantic.missing_branch",
+	)
+	_add_rule(
+		"^call 目标分支 '(.+)' 未找到$",
+		"Call target branch '%s' was not found.",
+		"semantic.missing_branch",
+	)
+	_add_rule(
+		"^call 目标分支 '(.+)' 不存在或为空$",
+		"Call target branch '%s' does not exist or is empty.",
+		"semantic.missing_branch",
+	)
+	_add_rule(
+		"^call 形成递归调用环：(.+)$",
+		"call would recurse (%s); recursive calls are not supported.",
+		"semantic.recursive_call",
+	)
+	_add_rule(
+		"^call 调用链超过 (.+) 层安全上限$",
+		"The call chain exceeds the %s-level safety limit.",
+		"semantic.call_chain_too_deep",
 	)
 	_add_rule(
 		"^jump 目标剧本 '(.+)' 不存在$",
@@ -332,6 +376,8 @@ static func _exact_code(message: String) -> String:
 			"screentext 缺少 {": "syntax.screentext_missing_open",
 			"screentext 缺少结束符 }": "syntax.screentext_missing_close",
 			"choice 缺少 -> 运算符": "syntax.choice_missing_arrow",
+			"call 目标必须是本剧本内有效的分支标识符（跨剧本调用暂不支持，请使用 jump）":
+			"syntax.invalid_value",
 			"actor show 缺少 at 和位置": "syntax.actor_position",
 			"actor show 状态后应为 at": "syntax.actor_position",
 			"actor show 的 at 缺少位置": "syntax.actor_position",

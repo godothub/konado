@@ -188,7 +188,18 @@
 					}
 				},
 				{
-					"match": "^\\s*(screentext|showtextbox|hidetextbox|waitsignal|background|jump_branch|jump|signal|end)\\b",
+					"match": "^\\s*(call)\\s+([\\p{L}_][\\p{L}\\p{N}_-]*)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.konado"
+						},
+						"2": {
+							"name": "entity.name.label.reference.konado"
+						}
+					}
+				},
+				{
+					"match": "^\\s*(screentext|showtextbox|hidetextbox|waitsignal|background|jump_branch|jump|return|signal|end)\\b",
 					"captures": {
 						"1": {
 							"name": "keyword.control.konado"

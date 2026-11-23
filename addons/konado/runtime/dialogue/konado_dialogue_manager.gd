@@ -1,7 +1,7 @@
 extends Control
 class_name KonadoDialogueManager
 
-## Konado 2.8 atomic Program runtime
+## Konado 2.9 atomic Program runtime
 
 signal shot_start
 signal shot_end
@@ -126,6 +126,10 @@ var pending_runtime_failure: Dictionary:
 
 var _achievement_manager: Node
 var _temp_variables: Dictionary = {}
+## `once` 选项的使用记录。键由 choice 指令稳定键 + 目标分支稳定键 + 组内序号组成；
+## 它属于运行期状态（随回退/存档还原），但不是脚本变量。
+var _used_choices: Dictionary = {}
+var _choice_condition_warnings: Dictionary = {}
 var _waiting_signal_name := ""
 var _story_localization: Node
 var _dialogue_services: RefCounted
@@ -243,6 +247,8 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		return
 	_reset_transient_interfaces()
 	_history_coordinator().clear()
+	_used_choices.clear()
+	_choice_condition_warnings.clear()
 	if stage_controller != null:
 		stage_controller.character_list = character_list
 		stage_controller.remove_all_actors(true)
@@ -426,22 +432,22 @@ func _resume_from_debugger() -> void:
 
 func _complete_instruction(
 	token: Dictionary, next_pc := INVALID_NEXT, schedule_next := true
-) -> void:
+) -> bool:
 	# A failed transaction intentionally retains its VM token for Retry. A cancelled
 	# async callback must never use that token to commit behind the recovery UI.
 	if dialogue_state == DialogState.FAILED or not _token_is_active(token):
-		return
+		return false
 	var instruction := _current_instruction()
 	if instruction == null:
-		return
+		return false
 	if next_pc == INVALID_NEXT:
 		next_pc = instruction.next_pc()
 	dialogue_line_end.emit(instruction.stable_key())
 	if not _token_is_active(token):
-		return
+		return false
 	if not _vm.commit_patch(token, next_pc, _capture_instruction_state(instruction)):
 		_fail_current("VM 提交失败", token, _instruction_failure_context(instruction))
-		return
+		return false
 	_history_coordinator().commit(token)
 	_active_token.clear()
 	_waiting_signal_name = ""
@@ -451,6 +457,7 @@ func _complete_instruction(
 		_finish_shot()
 	elif schedule_next:
 		_schedule_pump()
+	return true
 
 
 func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
@@ -479,14 +486,18 @@ func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
 		return false
 	var previous_shot := current_shot
 	var previous_temporary_variables := _temp_variables.duplicate(true)
+	var previous_call_stack := _vm.export_call_stack()
 	_temp_variables.clear()
 	_waiting_signal_name = ""
+	# jump 切换镜头即离开当前调用上下文：未 return 的调用帧随之作废。
+	_vm.clear_call_stack()
 	current_shot = next_shot
 	_remember_shot(current_shot)
 	var state_after := KonadoRuntimeState.capture(self)
 	if not _vm.transition(token, next_shot.program, entry_pc, state_after):
 		current_shot = previous_shot
 		_temp_variables = previous_temporary_variables
+		_vm.restore_call_stack(previous_call_stack)
 		_transition_failure = {
 			"code": "script.jump_vm_transition_failed",
 			"message": "VM 无法提交 jump 转场",
@@ -537,6 +548,7 @@ func _finish_shot() -> void:
 		return
 	_shot_active = false
 	dialogue_state = DialogState.OFF
+	_vm.clear_call_stack()
 	_cancel_pending_callbacks()
 	# 清理场景：隐藏对话框、清除文字、消除角色和背景
 	_reset_transient_interfaces(false)
@@ -722,9 +734,16 @@ func _on_option_triggered(choice: Dictionary, playback_generation := -1) -> void
 		return
 	if choice_controller != null:
 		choice_controller.distroy_options()
+	var instruction := _current_instruction()
+	# once 的使用记录必须先于提交写入，才能进入本次事务的 after 状态；
+	# 提交失败时恢复，避免 retry 把刚选的选项误判为“已用过”。
+	var used_before := _used_choices.duplicate(true)
+	if instruction != null and instruction.opcode() == KonadoOpcode.Type.CHOICE:
+		_mark_choice_used(instruction, choice)
 	if dialogue_state != DialogState.FAILED:
-		_history_coordinator().stage_choice(_active_token, _current_instruction(), choice)
-	_complete_instruction(_active_token, target_pc)
+		_history_coordinator().stage_choice(_active_token, instruction, choice)
+	if not _complete_instruction(_active_token, target_pc):
+		_used_choices = used_before
 
 
 func emit_wait_signal(signal_name: String) -> void:
@@ -794,6 +813,82 @@ func _resolve_operand(value: Variant) -> Variant:
 
 func _compare_values(left: Variant, right: Variant, operator: int) -> Dictionary:
 	return KonadoValueOperations.compare(left, right, operator)
+
+
+## once 选项的身份：choice 指令稳定键 + 目标分支稳定键 + 组内序号。
+## 不含选项文本，因此切换语言或改文案不会让“已选过”失效。
+func _choice_once_key(instruction: KonadoInstruction, choice: Dictionary) -> String:
+	var target_pc := int(choice.get("target_pc", KonadoProgram.INVALID_PC))
+	var target_key := ""
+	if current_shot != null and target_pc >= 0:
+		target_key = current_shot.key_for_pc(target_pc)
+	return (
+		"%s|%s|%d"
+		% [instruction.stable_key(), target_key, int(choice.get("index", -1))]
+	)
+
+
+func _is_choice_used(instruction: KonadoInstruction, choice: Dictionary) -> bool:
+	return _used_choices.has(_choice_once_key(instruction, choice))
+
+
+func _mark_choice_used(instruction: KonadoInstruction, choice: Dictionary) -> void:
+	_used_choices[_choice_once_key(instruction, choice)] = true
+
+
+## 清空 once 记录（默认在 init_dialogue 新开局时调用）。
+func clear_used_choices() -> void:
+	_used_choices.clear()
+
+
+## choice 的可见条件：变量不存在或类型不兼容时按“条件不成立”处理并只警告一次，
+## 避免一个可选菜单项把整个剧情打断。
+func _choice_condition_matches(condition: Dictionary) -> bool:
+	var left_result := _read_choice_operand(
+		String(condition.get("name", "")), bool(condition.get("persistent", false))
+	)
+	if not bool(left_result.get("ok", false)):
+		return false
+	var right: Variant = condition.get("value")
+	if right is Dictionary and right.get("kind") == "variable":
+		var right_result := _read_choice_operand(
+			String(right.get("name", "")), bool(right.get("persistent", false))
+		)
+		if not bool(right_result.get("ok", false)):
+			return false
+		right = right_result.get("value")
+	var operator := int(condition.get("operator", 0))
+	var comparison := _compare_values(left_result.get("value"), right, operator)
+	if not bool(comparison.get("ok", false)):
+		_warn_choice_condition(
+			"type:%s|%d" % [String(condition.get("name", "")), operator],
+			"choice 条件的左右值类型不兼容，按条件不成立处理",
+		)
+		return false
+	return bool(comparison.get("value", false))
+
+
+func _read_choice_operand(name: String, persistent: bool) -> Dictionary:
+	var exists := (
+		(variable_store != null and variable_store.has(name))
+		if persistent
+		else _temp_variables.has(name)
+	)
+	if not exists:
+		var prefix := "%" if persistent else "$"
+		_warn_choice_condition(
+			prefix + name,
+			"choice 条件引用的变量 '%s%s' 不存在，按条件不成立处理" % [prefix, name],
+		)
+		return {"ok": false}
+	return {"ok": true, "value": _read_variable(name, persistent)}
+
+
+func _warn_choice_condition(key: String, message: String) -> void:
+	if _choice_condition_warnings.has(key):
+		return
+	_choice_condition_warnings[key] = true
+	push_warning("Konado: " + message)
 
 
 func _apply_variable_instruction(instruction: KonadoInstruction) -> Dictionary:

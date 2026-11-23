@@ -255,17 +255,46 @@ func _actor_exit(
 
 
 func _choice(host: KonadoDialogueManager, instruction: KonadoInstruction, token: Dictionary) -> int:
-	var choices: Array[Dictionary] = instruction.value(&"options", [])
-	if choices.is_empty() or host.choice_controller == null:
+	var options: Array[Dictionary] = instruction.value(&"options", [])
+	if options.is_empty():
 		return _failed(
 			&"dialogue.choice_unavailable",
-			"choice 指令没有有效选项或选项界面",
+			"choice 指令没有有效选项",
+			{"subsystem": "dialogue", "operation": "choice"},
+		)
+	var filters: Variant = instruction.value(&"filters", [])
+	var visible: Array[Dictionary] = []
+	for option: Dictionary in options:
+		var filter := _choice_filter_at(filters, int(option.get("index", -1)))
+		if bool(filter.get("once", false)) and host._is_choice_used(instruction, option):
+			continue
+		var condition: Variant = filter.get("condition", {})
+		if condition is Dictionary and not (condition as Dictionary).is_empty():
+			if not host._choice_condition_matches(condition):
+				continue
+		visible.append(option)
+	if visible.is_empty():
+		# 与 Ren'Py 一致：没有任何可用选项时直接继续，不显示空菜单。
+		if not host._complete_instruction(token, instruction.true_pc()):
+			return KonadoVirtualMachine.Result.CANCELLED
+		return KonadoVirtualMachine.Result.COMPLETED
+	if host.choice_controller == null:
+		return _failed(
+			&"dialogue.choice_unavailable",
+			"choice 指令需要选项界面",
 			{"subsystem": "dialogue", "operation": "choice"},
 		)
 	host._set_waiting_token(token)
-	host.choice_controller.display_options(choices, host, 32, host._playback_generation)
+	host.choice_controller.display_options(visible, host, 32, host._playback_generation)
 	host.choice_controller.show()
 	return KonadoVirtualMachine.Result.WAITING
+
+
+func _choice_filter_at(filters: Variant, index: int) -> Dictionary:
+	if not filters is Array or index < 0 or index >= (filters as Array).size():
+		return {}
+	var filter: Variant = (filters as Array)[index]
+	return filter if filter is Dictionary else {}
 
 
 func _audio_bgm_play(
@@ -585,6 +614,60 @@ func _jump_script(
 				},
 			),
 		)
+	return KonadoVirtualMachine.Result.COMPLETED
+
+
+## call：把返回点压栈后跳到目标分支入口。
+## 压栈与提交属于同一个事务：提交失败时恢复原调用栈，保证 retry 不会产生重复帧。
+func _call_branch(
+	host: KonadoDialogueManager, instruction: KonadoInstruction, token: Dictionary
+) -> int:
+	var target := instruction.next_pc()
+	var return_address := instruction.true_pc()
+	if target == KonadoProgram.INVALID_PC or return_address == KonadoProgram.INVALID_PC:
+		return _failed(
+			&"runtime.instruction_failed",
+			"call 缺少可执行目标或返回点",
+			{"subsystem": "script", "operation": "call"},
+		)
+	var fingerprint := (
+		host.current_shot.program_fingerprint() if host.current_shot != null else ""
+	)
+	var stack_before := host._vm.export_call_stack()
+	if not host._vm.push_call(return_address, instruction.stable_key(), fingerprint):
+		host._vm.restore_call_stack(stack_before)
+		return _failed(
+			&"runtime.instruction_failed",
+			"call 调用层数超过 %d 层上限" % KonadoVirtualMachine.MAX_CALL_DEPTH,
+			{"subsystem": "script", "operation": "call"},
+		)
+	if not host._complete_instruction(token, target):
+		host._vm.restore_call_stack(stack_before)
+		return KonadoVirtualMachine.Result.CANCELLED
+	return KonadoVirtualMachine.Result.COMPLETED
+
+
+## return：弹栈并回到调用点；调用栈为空时等价于 end（结束当前镜头）。
+func _return(
+	host: KonadoDialogueManager, _instruction: KonadoInstruction, token: Dictionary
+) -> int:
+	var frame := host._vm.peek_call()
+	if frame.is_empty():
+		if not host._complete_instruction(token, KonadoProgram.INVALID_PC):
+			return KonadoVirtualMachine.Result.CANCELLED
+		return KonadoVirtualMachine.Result.COMPLETED
+	var target := int(frame.get("return_pc", KonadoProgram.INVALID_PC))
+	if target == KonadoProgram.INVALID_PC:
+		return _failed(
+			&"runtime.instruction_failed",
+			"return 没有有效的调用点",
+			{"subsystem": "script", "operation": "return"},
+		)
+	var stack_before := host._vm.export_call_stack()
+	host._vm.pop_call()
+	if not host._complete_instruction(token, target):
+		host._vm.restore_call_stack(stack_before)
+		return KonadoVirtualMachine.Result.CANCELLED
 	return KonadoVirtualMachine.Result.COMPLETED
 
 

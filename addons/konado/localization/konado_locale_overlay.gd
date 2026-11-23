@@ -101,12 +101,15 @@ static func _localized_choices(base: Array, localized: Array, line: int) -> Dict
 		var localized_choice: Dictionary = localized[index]
 		if int(base_choice.get("target_pc", -1)) != int(localized_choice.get("target_pc", -1)):
 			errors.append("第 %d 行：本地化选项 %d 不得修改跳转目标" % [line, index + 1])
+		if int(base_choice.get("index", -1)) != int(localized_choice.get("index", -1)):
+			errors.append("第 %d 行：本地化选项顺序与默认剧本不一致" % line)
 		(
 			value
 			. append(
 				{
 					"text": String(localized_choice.get("text", "")),
 					"target_pc": int(base_choice.get("target_pc", -1)),
+					"index": int(base_choice.get("index", -1)),
 				}
 			)
 		)
