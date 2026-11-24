@@ -45,17 +45,20 @@ func _get_reserved_words() -> PackedStringArray:
 
 
 func _is_control_flow_keyword(keyword: String) -> bool:
-	return keyword in [
-		"if",
-		"else",
-		"endif",
-		"choice",
-		"branch",
-		"jump",
-		"jump_branch",
-		"call",
-		"return",
-	]
+	return (
+		keyword
+		in [
+			"if",
+			"else",
+			"endif",
+			"choice",
+			"branch",
+			"jump",
+			"jump_branch",
+			"call",
+			"return",
+		]
+	)
 
 
 func _get_comment_delimiters() -> PackedStringArray:

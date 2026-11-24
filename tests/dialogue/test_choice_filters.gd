@@ -77,7 +77,10 @@ func _test_compiler_filters() -> void:
 	var compiler := KonadoScriptCompiler.new()
 	compiler.set_console_output_enabled(false)
 	_expect(
-		compiler.compile_string(FILTER_SCRIPT.replace("\n", "\r\n"), "res://choice-crlf.ks") != null,
+		(
+			compiler.compile_string(FILTER_SCRIPT.replace("\n", "\r\n"), "res://choice-crlf.ks")
+			!= null
+		),
 		"CRLF scripts compile the same as LF scripts",
 	)
 	var shot := _compile_shot(FILTER_SCRIPT, "res://choice-filters.ks")
@@ -100,7 +103,9 @@ func _test_compiler_filters() -> void:
 	var filter_array: Array = filters
 	_expect_equal(filter_array.size(), 3, "filters mirror the option count")
 	var always: Dictionary = filter_array[0]
-	_expect((always.get("condition", {}) as Dictionary).is_empty(), "plain options have no condition")
+	_expect(
+		(always.get("condition", {}) as Dictionary).is_empty(), "plain options have no condition"
+	)
 	_expect(not bool(always.get("once", false)), "plain options are repeatable")
 	var gated: Dictionary = filter_array[1]
 	var condition: Dictionary = gated.get("condition", {})
@@ -137,9 +142,12 @@ func _test_compile_errors() -> void:
 		)
 	_expect(
 		(
-			compiler.compile_string(
-				'choice "a" -> done if $undefined == 1\n\nbranch done\n\tend\n',
-				"res://choice-undefined.ks",
+			(
+				compiler
+				. compile_string(
+					'choice "a" -> done if $undefined == 1\n\nbranch done\n\tend\n',
+					"res://choice-undefined.ks",
+				)
 			)
 			== null
 		),
@@ -269,11 +277,10 @@ func _test_once_hides_on_revisit() -> void:
 	)
 	_expect(_press_choice(manager, "take once"), "the one-time option can be picked")
 	await _wait_for_condition(
-		func() -> bool:
-			return _choice_texts(manager) == PackedStringArray(["leave"]),
+		func() -> bool: return _choice_texts(manager) == PackedStringArray(["leave"]),
 		"the one-time option disappears when the menu is revisited",
 	)
-	_expect_equal(manager._used_choices.size(), 1, "the used option is recorded once")
+	_expect_equal(manager._choices().export_state().size(), 1, "the used option is recorded once")
 	_expect(_press_choice(manager, "leave"), "the remaining option can be picked")
 	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
 	await _free_node(manager)
@@ -290,12 +297,12 @@ func _test_step_back_restores_once() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:picked_line", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._used_choices.size(), 1, "picking marks the option as used")
+	_expect_equal(manager._choices().export_state().size(), 1, "picking marks the option as used")
 	_expect(manager.timeline.step_back(), "stepping back to the menu succeeds")
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:menu_choice", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect(manager._used_choices.is_empty(), "rollback removes the usage record")
+	_expect(manager._choices().export_state().is_empty(), "rollback removes the usage record")
 	_expect_equal(
 		_choice_texts(manager),
 		PackedStringArray(["take once", "leave"]),
@@ -305,9 +312,12 @@ func _test_step_back_restores_once() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:picked_line", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._used_choices.size(), 1, "re-picking records the usage exactly once")
+	_expect_equal(
+		manager._choices().export_state().size(),
+		1,
+		"re-picking records the usage exactly once",
+	)
 	await _free_node(manager)
-
 
 
 func _test_save_restores_once() -> void:
@@ -328,8 +338,7 @@ func _test_save_restores_once() -> void:
 	)
 	_expect(_press_choice(manager, "take once"), "the one-time option can be picked before saving")
 	await _wait_for_condition(
-		func() -> bool:
-			return _choice_texts(manager) == PackedStringArray(["leave"]),
+		func() -> bool: return _choice_texts(manager) == PackedStringArray(["leave"]),
 		"the revisited menu shows only the remaining option",
 	)
 	_expect(manager.save_game(1), "saving with a used one-time option succeeds")
@@ -337,11 +346,10 @@ func _test_save_restores_once() -> void:
 	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
 	_expect(manager.load_game(1), "loading the save succeeds")
 	await _wait_for_condition(
-		func() -> bool:
-			return _choice_texts(manager) == PackedStringArray(["leave"]),
+		func() -> bool: return _choice_texts(manager) == PackedStringArray(["leave"]),
 		"load restores the one-time usage",
 	)
-	_expect_equal(manager._used_choices.size(), 1, "load restores the usage record")
+	_expect_equal(manager._choices().export_state().size(), 1, "load restores the usage record")
 	_expect(_press_choice(manager, "leave"), "the remaining option works after loading")
 	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
 	_expect(manager.delete_save(1), "the fixture save is removed")
@@ -389,9 +397,7 @@ func _test_localized_choice_filters() -> void:
 		runtime_shot.install_locale_overlay(overlay_result.get("overlay")),
 		"the overlay is compatible with the default program",
 	)
-	var localized_options: Array[Dictionary] = runtime_shot.instruction_at(0).value(
-		&"options", []
-	)
+	var localized_options: Array[Dictionary] = runtime_shot.instruction_at(0).value(&"options", [])
 	_expect_equal(
 		String(localized_options[0].get("text", "")),
 		"本地化",

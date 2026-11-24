@@ -47,7 +47,7 @@ func validate_program(program: KonadoProgram) -> bool:
 			elif (filters_value as Array).size() * 2 != choices.size():
 				_errors.append(_program_at(program, pc, "选项过滤表与选项数量不一致"))
 			else:
-				for filter: Variant in (filters_value as Array):
+				for filter: Variant in filters_value as Array:
 					if not filter is Dictionary:
 						_errors.append(_program_at(program, pc, "选项过滤项必须是字典"))
 						break

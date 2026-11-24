@@ -12,9 +12,6 @@ const DEFAULT_CHECKPOINT_BYTES_LIMIT := 8 * 1024 * 1024
 const MAX_HISTORY_LIMIT := 100_000
 const MAX_CHECKPOINT_LIMIT := 4096
 const MAX_RETENTION_BYTES := 256 * 1024 * 1024
-## call/return 的最大嵌套层数。语义分析器会在编译期拒绝递归调用，
-## 因此正常编译产物不会触达该上限；这里只作为运行期防御。
-const MAX_CALL_DEPTH := 256
 
 var program: KonadoProgram
 var pc := KonadoProgram.INVALID_PC
@@ -23,6 +20,8 @@ var history_limit := DEFAULT_HISTORY_LIMIT
 var checkpoint_limit := DEFAULT_CHECKPOINT_LIMIT
 var history_bytes_limit := DEFAULT_HISTORY_BYTES_LIMIT
 var checkpoint_bytes_limit := DEFAULT_CHECKPOINT_BYTES_LIMIT
+## call/return 调用栈；属于运行期状态，随 delta 历史、行快照与存档一起恢复。
+var call_stack := KonadoCallStack.new()
 
 var _active_token: Dictionary = {}
 var _rewind_skip_keys: Dictionary = {}
@@ -38,10 +37,6 @@ var _checkpoint_bytes_total := 0
 var _commit_serial := 0
 var _last_restore_preserved := true
 
-## call/return 调用栈。每帧记录返回点、调用指令键与调用时的 Program 指纹。
-## 栈属于运行期状态：会随 delta 历史、行快照与存档一起保存/恢复。
-var call_stack: Array[Dictionary] = []
-
 
 func install(new_program: KonadoProgram, start_pc := KonadoProgram.INVALID_PC) -> bool:
 	if new_program == null or not new_program.is_valid():
@@ -54,7 +49,7 @@ func install(new_program: KonadoProgram, start_pc := KonadoProgram.INVALID_PC) -
 	pc = KonadoProgram.INVALID_PC
 	_current_state.clear()
 	clear_history()
-	clear_call_stack()
+	call_stack.clear()
 	program = new_program
 	pc = target_pc
 	return true
@@ -192,77 +187,7 @@ func _commit_skipped(token: Dictionary, next_pc: int) -> bool:
 func cancel() -> void:
 	generation += 1
 	_active_token.clear()
-	clear_call_stack()
-
-
-## 压入一个调用帧。返回点必须落在当前 Program 内；达到层数上限时不修改栈。
-func push_call(return_pc: int, instruction_key: String, program_fingerprint: String) -> bool:
-	if program == null or return_pc < 0 or return_pc >= program.instruction_count():
-		return false
-	if call_stack.size() >= MAX_CALL_DEPTH:
-		return false
-	call_stack.append(
-		{
-			"return_pc": return_pc,
-			"key": instruction_key,
-			"program": program_fingerprint,
-		}
-	)
-	return true
-
-
-## 读取最内层调用帧；空栈返回空字典。
-func peek_call() -> Dictionary:
-	if call_stack.is_empty():
-		return {}
-	return call_stack[call_stack.size() - 1].duplicate(true)
-
-
-## 弹出最内层调用帧；空栈返回空字典。
-func pop_call() -> Dictionary:
-	if call_stack.is_empty():
-		return {}
-	return (call_stack.pop_back() as Dictionary).duplicate(true)
-
-
-func clear_call_stack() -> void:
 	call_stack.clear()
-
-
-## 供 KonadoRuntimeState 保存调用栈：返回深拷贝，调用方可安全持有。
-func export_call_stack() -> Array:
-	var result: Array = []
-	for frame: Dictionary in call_stack:
-		result.append(frame.duplicate(true))
-	return result
-
-
-## 从状态/存档恢复调用栈。任一帧非法都会整体拒绝，避免把 pc 跳到错误位置。
-func restore_call_stack(value: Variant) -> bool:
-	if not value is Array:
-		return false
-	var frames: Array = value
-	if frames.size() > MAX_CALL_DEPTH:
-		return false
-	var restored: Array[Dictionary] = []
-	for entry: Variant in frames:
-		if not entry is Dictionary:
-			return false
-		var frame: Dictionary = entry
-		var return_pc := int(frame.get("return_pc", KonadoProgram.INVALID_PC))
-		if return_pc < 0:
-			return false
-		if program != null and return_pc >= program.instruction_count():
-			return false
-		restored.append(
-			{
-				"return_pc": return_pc,
-				"key": String(frame.get("key", "")),
-				"program": String(frame.get("program", "")),
-			}
-		)
-	call_stack = restored
-	return true
 
 
 func can_rollback(steps := 1, allow_cancelling_active := false, allow_barriers := false) -> bool:
@@ -451,8 +376,12 @@ func synchronize_state(state: Dictionary) -> void:
 	var execution: Variant = _current_state.get("execution", {})
 	if execution is Dictionary:
 		var frames: Variant = (execution as Dictionary).get("call_stack", [])
-		if not restore_call_stack(frames):
-			clear_call_stack()
+		if not call_stack.restore_frames(frames, _call_instruction_limit()):
+			call_stack.clear()
+
+
+func _call_instruction_limit() -> int:
+	return program.instruction_count() if program != null else -1
 
 
 func restore_boundary(new_program: KonadoProgram, start_pc: int, state: Dictionary) -> bool:

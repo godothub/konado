@@ -100,12 +100,15 @@ func _test_compile_errors() -> void:
 	)
 	_expect(
 		(
-			compiler.compile_string(
-				(
-					'Kona "a" [id=a]\ncall a [id=call_a]\nend\n\n'
-					+ 'branch a\n\tKona "b" [id=b]\n\tcall a [id=call_a2]\n\treturn\n'
-				),
-				"res://call-recurse.ks",
+			(
+				compiler
+				. compile_string(
+					(
+						'Kona "a" [id=a]\ncall a [id=call_a]\nend\n\n'
+						+ 'branch a\n\tKona "b" [id=b]\n\tcall a [id=call_a2]\n\treturn\n'
+					),
+					"res://call-recurse.ks",
+				)
 			)
 			== null
 		),
@@ -119,16 +122,19 @@ func _test_static_analysis_across_calls() -> void:
 	# 被调分支里定义的临时变量，调用点之后可以安全使用：分析器只放宽，不误报。
 	_expect(
 		(
-			compiler.compile_string(
-				(
-					"call set_name\n"
-					+ '$name "Hello"\n'
-					+ "end\n\n"
-					+ "branch set_name\n"
-					+ '\tset $name "Kona"\n'
-					+ "\treturn\n"
-				),
-				"res://call-temp-flow.ks",
+			(
+				compiler
+				. compile_string(
+					(
+						"call set_name\n"
+						+ '$name "Hello"\n'
+						+ "end\n\n"
+						+ "branch set_name\n"
+						+ '\tset $name "Kona"\n'
+						+ "\treturn\n"
+					),
+					"res://call-temp-flow.ks",
+				)
 			)
 			!= null
 		),
@@ -137,16 +143,19 @@ func _test_static_analysis_across_calls() -> void:
 	_expect(compiler.get_errors().is_empty(), "post-call analysis reports no false errors")
 	_expect(
 		(
-			compiler.compile_string(
-				(
-					"call show_kona\n"
-					+ "actor change Kona 正常\n"
-					+ "end\n\n"
-					+ "branch show_kona\n"
-					+ "\tactor show Kona 正常 at 1\n"
-					+ "\treturn\n"
-				),
-				"res://call-actor-flow.ks",
+			(
+				compiler
+				. compile_string(
+					(
+						"call show_kona\n"
+						+ "actor change Kona 正常\n"
+						+ "end\n\n"
+						+ "branch show_kona\n"
+						+ "\tactor show Kona 正常 at 1\n"
+						+ "\treturn\n"
+					),
+					"res://call-actor-flow.ks",
+				)
 			)
 			!= null
 		),
@@ -165,25 +174,28 @@ func _test_vm_call_stack_primitives() -> void:
 	var vm := KonadoVirtualMachine.new()
 	_expect(vm.install(shot.program, shot.entry_pc()), "VM installs the call fixture")
 	_expect(
-		vm.push_call(1, "ks:id:call_sub", shot.program.fingerprint()),
-		"push_call adds a frame",
+		vm.call_stack.push(1, "ks:id:call_sub", shot.program.fingerprint()),
+		"push adds a frame",
 	)
-	_expect_equal(vm.call_stack.size(), 1, "call stack grows by one")
-	var frame := vm.peek_call()
-	_expect_equal(int(frame.get("return_pc", -1)), 1, "peek_call returns the newest frame")
-	var exported := vm.export_call_stack()
-	vm.clear_call_stack()
-	_expect(vm.call_stack.is_empty(), "clear_call_stack empties the stack")
-	_expect(vm.restore_call_stack(exported), "restore_call_stack accepts an exported stack")
-	_expect_equal(vm.call_stack.size(), 1, "restore_call_stack rebuilds the frame")
-	_expect_equal(
-		int(vm.pop_call().get("return_pc", -1)), 1, "pop_call returns the newest frame"
-	)
-	_expect(vm.call_stack.is_empty(), "pop_call removes the frame")
-	_expect(not vm.push_call(-1, "", ""), "invalid return addresses are rejected")
+	_expect_equal(vm.call_stack.depth(), 1, "call stack grows by one")
+	var frame := vm.call_stack.peek()
+	_expect_equal(int(frame.get("return_pc", -1)), 1, "peek returns the newest frame")
+	var exported := vm.call_stack.export_frames()
+	vm.call_stack.clear()
+	_expect(vm.call_stack.is_empty(), "clear empties the stack")
+	_expect(vm.call_stack.restore_frames(exported), "restore accepts an exported stack")
+	_expect_equal(vm.call_stack.depth(), 1, "restore rebuilds the frame")
+	_expect_equal(int(vm.call_stack.pop().get("return_pc", -1)), 1, "pop returns the newest frame")
+	_expect(vm.call_stack.is_empty(), "pop removes the frame")
+	_expect(not vm.call_stack.push(-1, "", ""), "invalid return addresses are rejected")
 	_expect(
-		not vm.restore_call_stack(
-			[{"return_pc": shot.program.instruction_count(), "key": "", "program": ""}]
+		not (
+			vm
+			. call_stack
+			. restore_frames(
+				[{"return_pc": shot.program.instruction_count(), "key": "", "program": ""}],
+				shot.program.instruction_count(),
+			)
 		),
 		"out-of-range frames are rejected",
 	)
@@ -202,7 +214,7 @@ func _test_call_runs_callee_and_returns() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:inside", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 1, "entering the callee pushes one frame")
+	_expect_equal(manager._vm.call_stack.depth(), 1, "entering the callee pushes one frame")
 	await _finish_current_dialogue(manager)
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:after", KonadoDialogueManager.DialogState.WAITING
@@ -224,17 +236,17 @@ func _test_nested_calls_return_in_order() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:a1", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 1, "first call pushed one frame")
+	_expect_equal(manager._vm.call_stack.depth(), 1, "first call pushed one frame")
 	await _finish_current_dialogue(manager)
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:b1", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 2, "nested call pushed a second frame")
+	_expect_equal(manager._vm.call_stack.depth(), 2, "nested call pushed a second frame")
 	await _finish_current_dialogue(manager)
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:a2", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 1, "inner return pops only the inner frame")
+	_expect_equal(manager._vm.call_stack.depth(), 1, "inner return pops only the inner frame")
 	await _finish_current_dialogue(manager)
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:done", KonadoDialogueManager.DialogState.WAITING
@@ -243,7 +255,6 @@ func _test_nested_calls_return_in_order() -> void:
 	await _finish_current_dialogue(manager)
 	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
 	await _free_node(manager)
-
 
 
 func _test_return_without_call_ends_shot() -> void:
@@ -270,7 +281,7 @@ func _test_step_back_restores_call_stack() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:inside", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 1, "frame exists inside the callee")
+	_expect_equal(manager._vm.call_stack.depth(), 1, "frame exists inside the callee")
 	_expect(manager.timeline.can_step_back(), "the previous line is reachable")
 	_expect(manager.timeline.step_back(), "step_back succeeds from inside a call")
 	await _wait_for_instruction_and_state(
@@ -282,7 +293,7 @@ func _test_step_back_restores_call_stack() -> void:
 		manager, "ks:id:inside", KonadoDialogueManager.DialogState.WAITING
 	)
 	_expect_equal(
-		manager._vm.call_stack.size(), 1, "re-entering the callee pushes exactly one frame"
+		manager._vm.call_stack.depth(), 1, "re-entering the callee pushes exactly one frame"
 	)
 	await _finish_current_dialogue(manager)
 	await _wait_for_instruction_and_state(
@@ -313,7 +324,7 @@ func _test_save_restore_keeps_call_stack() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:inside", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 1, "frame exists before saving")
+	_expect_equal(manager._vm.call_stack.depth(), 1, "frame exists before saving")
 	_expect(manager.save_game(1), "saving inside a call succeeds")
 	manager.stop_dialogue()
 	await _wait_for_state(manager, KonadoDialogueManager.DialogState.OFF)
@@ -321,7 +332,7 @@ func _test_save_restore_keeps_call_stack() -> void:
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:inside", KonadoDialogueManager.DialogState.WAITING
 	)
-	_expect_equal(manager._vm.call_stack.size(), 1, "load restores the call stack")
+	_expect_equal(manager._vm.call_stack.depth(), 1, "load restores the call stack")
 	await _finish_current_dialogue(manager)
 	await _wait_for_instruction_and_state(
 		manager, "ks:id:after", KonadoDialogueManager.DialogState.WAITING

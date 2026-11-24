@@ -303,12 +303,10 @@ func _merge(left: Dictionary, right: Dictionary) -> Dictionary:
 		"actor_may": _union(left["actor_may"], right["actor_may"]),
 		"temp_must": _intersection(left["temp_must"], right["temp_must"]),
 		"temp_types": _merge_types(left["temp_types"], right["temp_types"]),
-		"unknown_temps": (
-			bool(left.get("unknown_temps", false)) or bool(right.get("unknown_temps", false))
-		),
-		"unknown_actors": (
-			bool(left.get("unknown_actors", false)) or bool(right.get("unknown_actors", false))
-		),
+		"unknown_temps":
+		bool(left.get("unknown_temps", false)) or bool(right.get("unknown_temps", false)),
+		"unknown_actors":
+		bool(left.get("unknown_actors", false)) or bool(right.get("unknown_actors", false)),
 	}
 
 

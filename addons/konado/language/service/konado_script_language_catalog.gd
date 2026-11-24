@@ -141,7 +141,8 @@ const COMMAND_DESCRIPTIONS: Dictionary = {
 	},
 	"choice":
 	{
-		"en": "Add a choice that targets a branch, optionally gated by a condition or shown only once.",
+		"en":
+		"Add a choice that targets a branch, optionally gated by a condition or shown only once.",
 		"zh": "添加跳转到分支的选项，可按条件显示或只显示一次。",
 	},
 	"branch":

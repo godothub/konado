@@ -43,9 +43,9 @@ const EXACT_ENGLISH: Dictionary = {
 	"choice 缺少选项文本": "choice requires option text.",
 	"choice 缺少 -> 运算符": "choice requires the -> operator.",
 	"choice 缺少目标分支名": "choice requires a target branch.",
-	"choice 条件缺少变量引用（格式：choice \"文本\" -> 分支 if %变量名 == 值）":
+	'choice 条件缺少变量引用（格式：choice "文本" -> 分支 if %变量名 == 值）':
 	(
-		"choice conditions require a variable reference (format: choice \"text\" -> branch if "
+		'choice conditions require a variable reference (format: choice "text" -> branch if '
 		+ "%variable == value)."
 	),
 	"choice 条件缺少比较运算符": "choice conditions require a comparison operator.",
@@ -376,8 +376,7 @@ static func _exact_code(message: String) -> String:
 			"screentext 缺少 {": "syntax.screentext_missing_open",
 			"screentext 缺少结束符 }": "syntax.screentext_missing_close",
 			"choice 缺少 -> 运算符": "syntax.choice_missing_arrow",
-			"call 目标必须是本剧本内有效的分支标识符（跨剧本调用暂不支持，请使用 jump）":
-			"syntax.invalid_value",
+			"call 目标必须是本剧本内有效的分支标识符（跨剧本调用暂不支持，请使用 jump）": "syntax.invalid_value",
 			"actor show 缺少 at 和位置": "syntax.actor_position",
 			"actor show 状态后应为 at": "syntax.actor_position",
 			"actor show 的 at 缺少位置": "syntax.actor_position",

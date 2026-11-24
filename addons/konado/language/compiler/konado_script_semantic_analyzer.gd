@@ -6,7 +6,7 @@ class_name KonadoScriptSemanticAnalyzer
 
 const MAX_CONTROL_FLOW_STEPS := 500_000
 const MAX_DIAGNOSTICS := 256
-## call 链的静态上限；与 KonadoVirtualMachine.MAX_CALL_DEPTH 保持一致。
+## call 链的静态上限；与 KonadoCallStack.MAX_DEPTH 保持一致。
 const MAX_CALL_CHAIN := 256
 
 var console_output_enabled := true

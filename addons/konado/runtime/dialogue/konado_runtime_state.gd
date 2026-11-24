@@ -61,7 +61,7 @@ static func capture_domains(
 						if manager.current_shot != null
 						else ""
 					),
-					"call_stack": manager._vm.export_call_stack(),
+					"call_stack": manager._vm.call_stack.export_frames(),
 				}
 			DOMAIN_TEMPORARY_VARIABLES:
 				result[domain] = manager._temp_variables.duplicate(true)
@@ -98,7 +98,7 @@ static func capture_domains(
 			DOMAIN_RANDOM_STATE:
 				result[domain] = manager._rng.state
 			DOMAIN_CHOICES:
-				result[domain] = manager._used_choices.duplicate(true)
+				result[domain] = manager._choices().export_state()
 	return result
 
 
@@ -218,7 +218,10 @@ static func validate(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 		or String(execution.get("program_fingerprint", "")).is_empty()
 	):
 		return false
-	if not execution.has("call_stack") or not _validate_call_stack(execution["call_stack"]):
+	if (
+		not execution.has("call_stack")
+		or not _validate_call_stack(execution["call_stack"], manager)
+	):
 		return false
 	for key in [
 		"temporary_variables",
@@ -249,10 +252,10 @@ static func restore(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 		return false
 	# 先恢复调用栈：它是执行位置的一部分，非法帧必须整体拒绝而不是跳到错误 pc。
 	var execution: Dictionary = state.get("execution", {})
-	if not manager._vm.restore_call_stack(execution["call_stack"]):
+	if not _restore_call_stack(execution["call_stack"], manager):
 		return false
 	manager._temp_variables = state.get("temporary_variables", {}).duplicate(true)
-	manager._used_choices = state["choices"].duplicate(true)
+	manager._choices().restore_state(state["choices"])
 	manager._waiting_signal_name = ""
 	manager._rng.state = int(state.get("random_state", manager._rng.state))
 	if manager.variable_store != null:
@@ -301,24 +304,19 @@ static func _restore_stage(state: Dictionary, manager: KonadoDialogueManager) ->
 
 
 ## 调用栈是 2.9 运行期状态的必需字段；2.8 存档在版本校验阶段就会被拒绝。
-static func _validate_call_stack(value: Variant) -> bool:
-	if not value is Array:
-		return false
-	var frames: Array = value
-	if frames.size() > KonadoVirtualMachine.MAX_CALL_DEPTH:
-		return false
-	for entry: Variant in frames:
-		if not entry is Dictionary:
-			return false
-		var frame: Dictionary = entry
-		var return_pc: Variant = frame.get("return_pc", null)
-		if not return_pc is int or int(return_pc) < 0:
-			return false
-		if not frame.get("key", "") is String:
-			return false
-		if not frame.get("program", "") is String:
-			return false
-	return true
+static func _validate_call_stack(value: Variant, manager: KonadoDialogueManager) -> bool:
+	return KonadoCallStack.is_valid_frames(value, _call_instruction_limit(manager))
+
+
+static func _restore_call_stack(value: Variant, manager: KonadoDialogueManager) -> bool:
+	return manager._vm.call_stack.restore_frames(value, _call_instruction_limit(manager))
+
+
+## 返回点必须落在当前镜头 Program 内；没有镜头时跳过范围检查。
+static func _call_instruction_limit(manager: KonadoDialogueManager) -> int:
+	if manager.current_shot == null or manager.current_shot.program == null:
+		return -1
+	return manager.current_shot.program.instruction_count()
 
 
 static func _validate_stage(state: Dictionary, manager: KonadoDialogueManager) -> bool:

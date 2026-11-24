@@ -17,6 +17,7 @@ enum DialogState { OFF, EXECUTING, WAITING, FAILED }
 const DIALOGUE_SERVICES := preload(
 	"res://addons/konado/runtime/dialogue/konado_dialogue_services.gd"
 )
+const CHOICE_TRACKER := preload("res://addons/konado/runtime/dialogue/konado_choice_tracker.gd")
 const INSTRUCTION_AWAITER := preload(
 	"res://addons/konado/runtime/dialogue/konado_instruction_awaiter.gd"
 )
@@ -126,10 +127,7 @@ var pending_runtime_failure: Dictionary:
 
 var _achievement_manager: Node
 var _temp_variables: Dictionary = {}
-## `once` 选项的使用记录。键由 choice 指令稳定键 + 目标分支稳定键 + 组内序号组成；
-## 它属于运行期状态（随回退/存档还原），但不是脚本变量。
-var _used_choices: Dictionary = {}
-var _choice_condition_warnings: Dictionary = {}
+var _choice_tracker: RefCounted
 var _waiting_signal_name := ""
 var _story_localization: Node
 var _dialogue_services: RefCounted
@@ -145,8 +143,6 @@ var _pumping := false
 var _pump_scheduled := false
 var _dialogue_typing := false
 var _rng := RandomNumberGenerator.new()
-var _translation_reload_queued := false
-var _loaded_locale := ""
 var _save_feedback_generation := 0
 var _transition_failure: Dictionary = {}
 var _runtime_failure_controller: KonadoRuntimeFailureController
@@ -158,7 +154,7 @@ func _notification(what: int) -> void:
 		return
 	if _runtime_failure_controller != null:
 		_runtime_failure_controller._refresh_overlay()
-	_queue_translation_reload()
+	_services()._queue_translation_reload()
 
 
 func _ready() -> void:
@@ -170,7 +166,7 @@ func _ready() -> void:
 	variable_store = variable_store if variable_store != null else KonadoVariableStore.new()
 	_achievement_manager = get_tree().root.get_node_or_null("KonadoAchievements")
 	_story_localization = get_tree().root.get_node_or_null("KonadoStoryLocalization")
-	_loaded_locale = TranslationServer.get_locale()
+	_services()._sync_locale()
 	if require_visible_in_tree:
 		if not is_visible_in_tree():
 			return
@@ -247,8 +243,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		return
 	_reset_transient_interfaces()
 	_history_coordinator().clear()
-	_used_choices.clear()
-	_choice_condition_warnings.clear()
+	_choices().clear()
 	if stage_controller != null:
 		stage_controller.character_list = character_list
 		stage_controller.remove_all_actors(true)
@@ -486,18 +481,18 @@ func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
 		return false
 	var previous_shot := current_shot
 	var previous_temporary_variables := _temp_variables.duplicate(true)
-	var previous_call_stack := _vm.export_call_stack()
+	var previous_call_stack := _vm.call_stack.export_frames()
 	_temp_variables.clear()
 	_waiting_signal_name = ""
 	# jump 切换镜头即离开当前调用上下文：未 return 的调用帧随之作废。
-	_vm.clear_call_stack()
+	_vm.call_stack.clear()
 	current_shot = next_shot
 	_remember_shot(current_shot)
 	var state_after := KonadoRuntimeState.capture(self)
 	if not _vm.transition(token, next_shot.program, entry_pc, state_after):
 		current_shot = previous_shot
 		_temp_variables = previous_temporary_variables
-		_vm.restore_call_stack(previous_call_stack)
+		_vm.call_stack.restore_frames(previous_call_stack)
 		_transition_failure = {
 			"code": "script.jump_vm_transition_failed",
 			"message": "VM 无法提交 jump 转场",
@@ -548,7 +543,7 @@ func _finish_shot() -> void:
 		return
 	_shot_active = false
 	dialogue_state = DialogState.OFF
-	_vm.clear_call_stack()
+	_vm.call_stack.clear()
 	_cancel_pending_callbacks()
 	# 清理场景：隐藏对话框、清除文字、消除角色和背景
 	_reset_transient_interfaces(false)
@@ -737,13 +732,13 @@ func _on_option_triggered(choice: Dictionary, playback_generation := -1) -> void
 	var instruction := _current_instruction()
 	# once 的使用记录必须先于提交写入，才能进入本次事务的 after 状态；
 	# 提交失败时恢复，避免 retry 把刚选的选项误判为“已用过”。
-	var used_before := _used_choices.duplicate(true)
+	var used_before: Dictionary = _choices().export_state()
 	if instruction != null and instruction.opcode() == KonadoOpcode.Type.CHOICE:
-		_mark_choice_used(instruction, choice)
+		_choices().mark_used(instruction, choice)
 	if dialogue_state != DialogState.FAILED:
 		_history_coordinator().stage_choice(_active_token, instruction, choice)
 	if not _complete_instruction(_active_token, target_pc):
-		_used_choices = used_before
+		_choices().restore_state(used_before)
 
 
 func emit_wait_signal(signal_name: String) -> void:
@@ -753,42 +748,6 @@ func emit_wait_signal(signal_name: String) -> void:
 
 func reload_localized_script(locale: String) -> bool:
 	return _services()._reload_localized_script(locale)
-
-
-func _queue_translation_reload() -> void:
-	if _translation_reload_queued:
-		return
-	_translation_reload_queued = true
-	_apply_translation_change.call_deferred()
-
-
-func _apply_translation_change() -> void:
-	_translation_reload_queued = false
-	if not is_inside_tree() or not is_node_ready():
-		return
-	var locale := TranslationServer.get_locale()
-	if locale == _loaded_locale:
-		return
-	if current_shot == null or reload_localized_script(locale):
-		_loaded_locale = locale
-
-
-func _refresh_current_localized_dialogue() -> void:
-	var instruction := _current_instruction()
-	if instruction == null:
-		return
-	if instruction.opcode() == KonadoOpcode.Type.DIALOGUE and dialogue_box != null:
-		var speaker_result: Dictionary = _services().resolve_speaker(
-			int(instruction.value(&"speaker_kind")), String(instruction.value(&"speaker"))
-		)
-		if not bool(speaker_result.get("ok", false)):
-			return
-		dialogue_box.character_name = String(speaker_result.get("value", ""))
-		dialogue_box.dialogue_text = _interpolate_variables(String(instruction.value(&"content")))
-	elif instruction.opcode() == KonadoOpcode.Type.CHOICE and choice_controller != null:
-		choice_controller.display_options(
-			instruction.value(&"options", []), self, 32, _playback_generation
-		)
 
 
 func _load_localized_shot(shot: KonadoShot) -> KonadoShot:
@@ -815,80 +774,11 @@ func _compare_values(left: Variant, right: Variant, operator: int) -> Dictionary
 	return KonadoValueOperations.compare(left, right, operator)
 
 
-## once 选项的身份：choice 指令稳定键 + 目标分支稳定键 + 组内序号。
-## 不含选项文本，因此切换语言或改文案不会让“已选过”失效。
-func _choice_once_key(instruction: KonadoInstruction, choice: Dictionary) -> String:
-	var target_pc := int(choice.get("target_pc", KonadoProgram.INVALID_PC))
-	var target_key := ""
-	if current_shot != null and target_pc >= 0:
-		target_key = current_shot.key_for_pc(target_pc)
-	return (
-		"%s|%s|%d"
-		% [instruction.stable_key(), target_key, int(choice.get("index", -1))]
-	)
-
-
-func _is_choice_used(instruction: KonadoInstruction, choice: Dictionary) -> bool:
-	return _used_choices.has(_choice_once_key(instruction, choice))
-
-
-func _mark_choice_used(instruction: KonadoInstruction, choice: Dictionary) -> void:
-	_used_choices[_choice_once_key(instruction, choice)] = true
-
-
-## 清空 once 记录（默认在 init_dialogue 新开局时调用）。
-func clear_used_choices() -> void:
-	_used_choices.clear()
-
-
-## choice 的可见条件：变量不存在或类型不兼容时按“条件不成立”处理并只警告一次，
-## 避免一个可选菜单项把整个剧情打断。
-func _choice_condition_matches(condition: Dictionary) -> bool:
-	var left_result := _read_choice_operand(
-		String(condition.get("name", "")), bool(condition.get("persistent", false))
-	)
-	if not bool(left_result.get("ok", false)):
-		return false
-	var right: Variant = condition.get("value")
-	if right is Dictionary and right.get("kind") == "variable":
-		var right_result := _read_choice_operand(
-			String(right.get("name", "")), bool(right.get("persistent", false))
-		)
-		if not bool(right_result.get("ok", false)):
-			return false
-		right = right_result.get("value")
-	var operator := int(condition.get("operator", 0))
-	var comparison := _compare_values(left_result.get("value"), right, operator)
-	if not bool(comparison.get("ok", false)):
-		_warn_choice_condition(
-			"type:%s|%d" % [String(condition.get("name", "")), operator],
-			"choice 条件的左右值类型不兼容，按条件不成立处理",
-		)
-		return false
-	return bool(comparison.get("value", false))
-
-
-func _read_choice_operand(name: String, persistent: bool) -> Dictionary:
-	var exists := (
-		(variable_store != null and variable_store.has(name))
-		if persistent
-		else _temp_variables.has(name)
-	)
-	if not exists:
-		var prefix := "%" if persistent else "$"
-		_warn_choice_condition(
-			prefix + name,
-			"choice 条件引用的变量 '%s%s' 不存在，按条件不成立处理" % [prefix, name],
-		)
-		return {"ok": false}
-	return {"ok": true, "value": _read_variable(name, persistent)}
-
-
-func _warn_choice_condition(key: String, message: String) -> void:
-	if _choice_condition_warnings.has(key):
-		return
-	_choice_condition_warnings[key] = true
-	push_warning("Konado: " + message)
+## `choice` 运行期辅助：`once` 使用记录与可见条件求值（延迟创建）。
+func _choices() -> RefCounted:
+	if _choice_tracker == null:
+		_choice_tracker = CHOICE_TRACKER.new(self)
+	return _choice_tracker
 
 
 func _apply_variable_instruction(instruction: KonadoInstruction) -> Dictionary:

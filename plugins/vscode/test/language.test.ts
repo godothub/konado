@@ -121,6 +121,27 @@ describe("KonadoScript semantic references", () => {
 			]),
 		);
 	});
+
+	it("classifies call targets as branch references", () => {
+		const references = extractReferences(
+			["call shared_scene", "branch shared_scene"].join("\n"),
+		);
+
+		expect(references).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: "branches",
+					name: "shared_scene",
+					role: "reference",
+				}),
+				expect.objectContaining({
+					kind: "branches",
+					name: "shared_scene",
+					role: "definition",
+				}),
+			]),
+		);
+	});
 });
 
 describe("KonadoScript diagnostics", () => {
@@ -206,6 +227,44 @@ describe("KonadoScript diagnostics", () => {
 		expect(codes).toContain("syntax.named_parameter");
 		expect(codes).toContain("syntax.choice_group_parameter");
 		expect(codes).toContain("semantic.duplicate_instruction_id");
+	});
+
+	it("accepts subroutines and choice filters", () => {
+		const source = [
+			"call shared_scene",
+			'choice "Gift" -> gift if %love >= 5',
+			'choice "Rumor" -> rumor once',
+			'choice "Secret" -> secret once if %love == 10',
+			"return",
+			"",
+			"branch shared_scene",
+			"\treturn",
+			"branch gift",
+			"\tend",
+			"branch rumor",
+			"\tend",
+			"branch secret",
+			"\tend",
+		].join("\n");
+
+		expect(analyzeDocument(source)).toEqual([]);
+	});
+
+	it("rejects malformed call and choice filters", () => {
+		const codes = analyzeDocument(
+			[
+				"call",
+				"return extra",
+				'choice "Gift" -> gift if',
+				'choice "Rumor" -> rumor once once',
+				'choice "Secret" -> secret if %love >= 1 if %love == 2',
+			].join("\n"),
+		).map((diagnostic) => diagnostic.code);
+
+		expect(codes).toContain("syntax.arguments");
+		expect(codes).toContain("syntax.return");
+		expect(codes).toContain("syntax.choice_condition");
+		expect(codes).toContain("syntax.choice_once");
 	});
 
 	it("offers ranked fixes for misspelled commands", () => {

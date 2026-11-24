@@ -227,9 +227,7 @@ static func _references_from_spans(
 					continue
 				var variable_index := index + 1
 				var variable_text := (
-					String(tokens[variable_index]["text"])
-					if variable_index < tokens.size()
-					else ""
+					String(tokens[variable_index]["text"]) if variable_index < tokens.size() else ""
 				)
 				if variable_text.begins_with("%") or variable_text.begins_with("$"):
 					_append_argument_reference(references, tokens, variable_index, "variables")

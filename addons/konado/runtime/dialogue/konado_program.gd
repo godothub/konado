@@ -131,30 +131,37 @@ func _valid_operand(value: Variant, field_type: String, keys: Dictionary) -> boo
 func _valid_filters(value: Variant) -> bool:
 	if not value is Array:
 		return false
-	for entry: Variant in (value as Array):
-		if not entry is Dictionary:
-			return false
-		var filter: Dictionary = entry
-		var once: Variant = filter.get("once", false)
-		if not once is bool:
-			return false
-		var condition: Variant = filter.get("condition", {})
-		if not condition is Dictionary:
-			return false
-		var condition_dict: Dictionary = condition
-		if condition_dict.is_empty():
-			continue
-		var name: Variant = condition_dict.get("name", null)
-		if not name is String or String(name).is_empty():
-			return false
-		if not condition_dict.get("persistent", null) is bool:
-			return false
-		var operator: Variant = condition_dict.get("operator", null)
-		if not operator is int or int(operator) < 0 or int(operator) > 5:
-			return false
-		if not _valid_value(condition_dict.get("value")):
+	for entry: Variant in value as Array:
+		if not _valid_filter_entry(entry):
 			return false
 	return true
+
+
+func _valid_filter_entry(entry: Variant) -> bool:
+	if not entry is Dictionary:
+		return false
+	var filter: Dictionary = entry
+	if not filter.get("once", false) is bool:
+		return false
+	var condition: Variant = filter.get("condition", {})
+	if not condition is Dictionary:
+		return false
+	var condition_dict: Dictionary = condition
+	if condition_dict.is_empty():
+		return true
+	return _valid_filter_condition(condition_dict)
+
+
+func _valid_filter_condition(condition: Dictionary) -> bool:
+	var name: Variant = condition.get("name", null)
+	if not name is String or String(name).is_empty():
+		return false
+	if not condition.get("persistent", null) is bool:
+		return false
+	var operator: Variant = condition.get("operator", null)
+	if not operator is int or int(operator) < 0 or int(operator) > 5:
+		return false
+	return _valid_value(condition.get("value"))
 
 
 func _valid_value(value: Variant) -> bool:

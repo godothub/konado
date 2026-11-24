@@ -266,11 +266,11 @@ func _choice(host: KonadoDialogueManager, instruction: KonadoInstruction, token:
 	var visible: Array[Dictionary] = []
 	for option: Dictionary in options:
 		var filter := _choice_filter_at(filters, int(option.get("index", -1)))
-		if bool(filter.get("once", false)) and host._is_choice_used(instruction, option):
+		if bool(filter.get("once", false)) and host._choices().is_used(instruction, option):
 			continue
 		var condition: Variant = filter.get("condition", {})
 		if condition is Dictionary and not (condition as Dictionary).is_empty():
-			if not host._choice_condition_matches(condition):
+			if not host._choices().matches(condition):
 				continue
 		visible.append(option)
 	if visible.is_empty():
@@ -630,19 +630,17 @@ func _call_branch(
 			"call 缺少可执行目标或返回点",
 			{"subsystem": "script", "operation": "call"},
 		)
-	var fingerprint := (
-		host.current_shot.program_fingerprint() if host.current_shot != null else ""
-	)
-	var stack_before := host._vm.export_call_stack()
-	if not host._vm.push_call(return_address, instruction.stable_key(), fingerprint):
-		host._vm.restore_call_stack(stack_before)
+	var fingerprint := host.current_shot.program_fingerprint() if host.current_shot != null else ""
+	var stack_before := host._vm.call_stack.export_frames()
+	if not host._vm.call_stack.push(return_address, instruction.stable_key(), fingerprint):
+		host._vm.call_stack.restore_frames(stack_before)
 		return _failed(
 			&"runtime.instruction_failed",
-			"call 调用层数超过 %d 层上限" % KonadoVirtualMachine.MAX_CALL_DEPTH,
+			"call 调用层数超过 %d 层上限" % KonadoCallStack.MAX_DEPTH,
 			{"subsystem": "script", "operation": "call"},
 		)
 	if not host._complete_instruction(token, target):
-		host._vm.restore_call_stack(stack_before)
+		host._vm.call_stack.restore_frames(stack_before)
 		return KonadoVirtualMachine.Result.CANCELLED
 	return KonadoVirtualMachine.Result.COMPLETED
 
@@ -651,7 +649,7 @@ func _call_branch(
 func _return(
 	host: KonadoDialogueManager, _instruction: KonadoInstruction, token: Dictionary
 ) -> int:
-	var frame := host._vm.peek_call()
+	var frame := host._vm.call_stack.peek()
 	if frame.is_empty():
 		if not host._complete_instruction(token, KonadoProgram.INVALID_PC):
 			return KonadoVirtualMachine.Result.CANCELLED
@@ -663,10 +661,10 @@ func _return(
 			"return 没有有效的调用点",
 			{"subsystem": "script", "operation": "return"},
 		)
-	var stack_before := host._vm.export_call_stack()
-	host._vm.pop_call()
+	var stack_before := host._vm.call_stack.export_frames()
+	host._vm.call_stack.pop()
 	if not host._complete_instruction(token, target):
-		host._vm.restore_call_stack(stack_before)
+		host._vm.call_stack.restore_frames(stack_before)
 		return KonadoVirtualMachine.Result.CANCELLED
 	return KonadoVirtualMachine.Result.COMPLETED
 

@@ -89,12 +89,15 @@ static func is_terminal(opcode: int) -> bool:
 
 
 static func is_control_flow(opcode: int) -> bool:
-	return opcode in [
-		Type.CHOICE,
-		Type.CONDITION,
-		Type.JUMP_SCRIPT,
-		Type.JUMP_BRANCH,
-		Type.CALL_BRANCH,
-		Type.RETURN,
-		Type.HALT,
-	]
+	return (
+		opcode
+		in [
+			Type.CHOICE,
+			Type.CONDITION,
+			Type.JUMP_SCRIPT,
+			Type.JUMP_BRANCH,
+			Type.CALL_BRANCH,
+			Type.RETURN,
+			Type.HALT,
+		]
+	)

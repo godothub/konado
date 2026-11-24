@@ -248,8 +248,7 @@ func _instruction_for(node: KonadoScriptSyntaxTree.ASTNode) -> Dictionary:
 				condition = {
 					"persistent": String(option.condition.get("prefix", "%")) == "%",
 					"name": String(option.condition.get("name", "")),
-					"operator":
-					_condition_opcode(String(option.condition.get("op", "=="))),
+					"operator": _condition_opcode(String(option.condition.get("op", "=="))),
 					"value": option.condition.get("value"),
 				}
 			filters.append({"condition": condition, "once": option.once})

@@ -277,6 +277,9 @@ export function referencesForLine(
 		case "jump_branch":
 			add(reference(tokens, 1, "branches", lineNumber));
 			break;
+		case "call":
+			add(reference(tokens, 1, "branches", lineNumber));
+			break;
 		case "jump":
 			add(reference(tokens, 1, "scripts", lineNumber));
 			break;
@@ -829,6 +832,7 @@ function validateCommand(
 		case "waitsignal":
 		case "signal":
 		case "jump_branch":
+		case "call":
 		case "branch":
 			requireCount(diagnostics, line, tokens, 2, `${root} <name>`);
 			break;
@@ -929,39 +933,7 @@ function validateCommand(
 			}
 			break;
 		case "choice":
-			if (
-				tokens.length !== 4 ||
-				!tokens[1]?.quoted ||
-				tokens[2]?.text !== "->" ||
-				!IDENTIFIER.test(tokens[3]?.text ?? "")
-			) {
-				const fixes: QuickFixSpec[] = [];
-				if (tokens.length === 3 && tokens[1]?.quoted && tokens[2]) {
-					fixes.push({
-						title: "Insert missing '->'",
-						titleZh: "补充缺失的“->”",
-						preferred: true,
-						edits: [
-							{
-								line,
-								start: tokens[2].start,
-								end: tokens[2].start,
-								newText: "-> ",
-							},
-						],
-					});
-				}
-				diagnostics.push(
-					diagnostic(
-						line,
-						tokens.at(-1),
-						"syntax.choice",
-						'Expected: choice "<option>" -> <branch_name>',
-						'应为：choice "<选项>" -> <分支名>',
-						fixes,
-					),
-				);
-			}
+			validateChoice(line, tokens, diagnostics);
 			break;
 		case "if":
 			validateIf(line, content, tokens, diagnostics);
@@ -996,6 +968,7 @@ function validateCommand(
 			break;
 		case "endif":
 		case "end":
+		case "return":
 			if (tokens.length !== 1) {
 				diagnostics.push(
 					diagnostic(
@@ -1215,6 +1188,173 @@ function validateIf(
 			),
 		);
 	}
+}
+
+function validateChoice(
+	line: number,
+	tokens: readonly Token[],
+	diagnostics: DiagnosticSpec[],
+): void {
+	if (
+		tokens.length < 4 ||
+		!tokens[1]?.quoted ||
+		tokens[2]?.text !== "->" ||
+		!IDENTIFIER.test(tokens[3]?.text ?? "")
+	) {
+		const fixes: QuickFixSpec[] = [];
+		if (tokens.length === 3 && tokens[1]?.quoted && tokens[2]) {
+			fixes.push({
+				title: "Insert missing '->'",
+				titleZh: "补充缺失的“->”",
+				preferred: true,
+				edits: [
+					{
+						line,
+						start: tokens[2].start,
+						end: tokens[2].start,
+						newText: "-> ",
+					},
+				],
+			});
+		}
+		diagnostics.push(
+			diagnostic(
+				line,
+				tokens.at(-1),
+				"syntax.choice",
+				'Expected: choice "<option>" -> <branch_name> [if <condition>] [once]',
+				'应为：choice "<选项>" -> <分支名> [if <条件>] [once]',
+				fixes,
+			),
+		);
+		return;
+	}
+	validateChoiceFilters(line, tokens, diagnostics);
+}
+
+function validateChoiceFilters(
+	line: number,
+	tokens: readonly Token[],
+	diagnostics: DiagnosticSpec[],
+): void {
+	let index = 4;
+	let hasCondition = false;
+	let usedOnce = false;
+	while (index < tokens.length) {
+		const token = tokens[index];
+		if (!token) {
+			return;
+		}
+		if (token.text === "if") {
+			if (hasCondition) {
+				diagnostics.push(
+					diagnostic(
+						line,
+						token,
+						"syntax.choice_condition",
+						"A choice accepts at most one 'if' filter.",
+						"一个选项最多只能有一个“if”过滤条件。",
+					),
+				);
+				return;
+			}
+			hasCondition = true;
+			index = validateChoiceCondition(
+				line,
+				tokens,
+				index + 1,
+				diagnostics,
+			);
+			if (index < 0) {
+				return;
+			}
+			continue;
+		}
+		if (token.text.toLowerCase() === "once") {
+			if (usedOnce) {
+				diagnostics.push(
+					diagnostic(
+						line,
+						token,
+						"syntax.choice_once",
+						"A choice can be marked 'once' only one time.",
+						"同一个选项只能标记一次“once”。",
+					),
+				);
+				return;
+			}
+			usedOnce = true;
+			index += 1;
+			continue;
+		}
+		diagnostics.push(
+			diagnostic(
+				line,
+				token,
+				"syntax.choice",
+				'Expected: choice "<option>" -> <branch_name> [if <condition>] [once]',
+				'应为：choice "<选项>" -> <分支名> [if <条件>] [once]',
+			),
+		);
+		return;
+	}
+}
+
+function validateChoiceCondition(
+	line: number,
+	tokens: readonly Token[],
+	start: number,
+	diagnostics: DiagnosticSpec[],
+): number {
+	const variable = tokens[start];
+	if (!variable || !VARIABLE.test(variable.text)) {
+		diagnostics.push(
+			diagnostic(
+				line,
+				variable ?? tokens[start - 1],
+				"syntax.choice_condition",
+				"A choice condition must begin with a %persistent or $temporary variable.",
+				"选项条件必须以 %持久变量 或 $临时变量 开头。",
+			),
+		);
+		return -1;
+	}
+	const operator = tokens[start + 1];
+	if (!operator || !COMPARISON.test(operator.text)) {
+		diagnostics.push(
+			diagnostic(
+				line,
+				operator ?? variable,
+				"syntax.choice_condition",
+				"A choice condition needs a comparison operator.",
+				"选项条件缺少比较运算符。",
+			),
+		);
+		return -1;
+	}
+	const value = tokens[start + 2];
+	if (!value || !isChoiceConditionValue(value)) {
+		diagnostics.push(
+			diagnostic(
+				line,
+				value ?? operator,
+				"syntax.choice_condition",
+				"A choice condition needs a number, string, identifier, or variable value.",
+				"选项条件缺少数字、字符串、标识符或变量值。",
+			),
+		);
+		return -1;
+	}
+	return start + 3;
+}
+
+function isChoiceConditionValue(token: Token): boolean {
+	return (
+		token.quoted ||
+		NUMBER.test(token.text) ||
+		VARIABLE.test(token.text) ||
+		IDENTIFIER.test(token.text)
+	);
 }
 
 function validateAchievement(

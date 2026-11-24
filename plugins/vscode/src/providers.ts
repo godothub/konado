@@ -291,6 +291,7 @@ class CompletionProvider implements vscode.CompletionItemProvider {
 						? documentSymbols(document, "branches")
 						: [];
 			case "jump_branch":
+			case "call":
 				return argumentIndex === 1
 					? documentSymbols(document, "branches")
 					: [];
@@ -382,6 +383,8 @@ function isCompleteStatementForParameters(
 		div: 3,
 		jump: 2,
 		jump_branch: 2,
+		call: 2,
+		return: 1,
 		signal: 2,
 		"achievement unlock": 3,
 		"achievement increment": 4,
@@ -1049,7 +1052,7 @@ function completionKind(
 	if (argumentIndex === 1 && root in CONTEXT_KEYWORDS) {
 		return vscode.CompletionItemKind.Keyword;
 	}
-	if (["jump_branch", "choice", "branch"].includes(root)) {
+	if (["jump_branch", "call", "choice", "branch"].includes(root)) {
 		return vscode.CompletionItemKind.Reference;
 	}
 	if (["set", "add", "sub", "mul", "div", "if"].includes(root)) {
