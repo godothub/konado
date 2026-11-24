@@ -81,6 +81,11 @@ refreshes after you save a resource.
 3. Generated events reference the existing streams (files are not copied) and reuse the names.
 4. Legacy lists can be removed gradually; unmigrated entries still fall back to them at runtime.
 
+The sample project is already migrated and can be used as a reference: `res://audio/events/*.tres`,
+`res://audio/banks/demo_audio.tres`, `res://audio/audio_event_library.tres`, wired to the manager
+in `sample/demo/demo.tscn`. See [Audio Workflow](tutorial/core/audio-workflow.html) for the full
+pipeline.
+
 ## Troubleshooting
 
 | Symptom | Cause |

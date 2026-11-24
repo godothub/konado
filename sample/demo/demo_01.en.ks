@@ -1,4 +1,4 @@
-play bgm echo
+play bgm echo [fade=2.0]
 screentext {
     "This is full-screen text"
     "This is full-screen text"

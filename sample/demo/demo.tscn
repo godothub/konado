@@ -4,9 +4,8 @@
 [ext_resource type="Script" uid="uid://0sigieiwbsdg" path="res://sample/demo/demo_01.ks" id="3_3bwhi"]
 [ext_resource type="Resource" uid="uid://gi0knny11y78" path="res://sample/demo/character_list.tres" id="3_c17kf"]
 [ext_resource type="Resource" uid="uid://bf0o7uo4h3ta1" path="res://sample/demo/background_list.tres" id="4_qcbmp"]
-[ext_resource type="Resource" uid="uid://v3bsw26q8dli" path="res://sample/demo/background_music_list.tres" id="5_qcbmp"]
-[ext_resource type="Resource" uid="uid://etb5ls4s2lve" path="res://sample/demo/voice_list.tres" id="7_3bwhi"]
 [ext_resource type="PackedScene" uid="uid://buq324t8ugy0q" path="res://addons/konado/templates/default/dialogue_runtime.tscn" id="12_nuu33"]
+[ext_resource type="Resource" path="res://audio/audio_event_library.tres" id="5_audio_lib"]
 
 [node name="Demo" type="Control" unique_id=1757308143 node_paths=PackedStringArray("dialogue_manager")]
 layout_mode = 3
@@ -23,5 +22,4 @@ layout_mode = 1
 start_dialogue_shot = ExtResource("3_3bwhi")
 character_list = ExtResource("3_c17kf")
 background_list = ExtResource("4_qcbmp")
-background_music_list = ExtResource("5_qcbmp")
-voice_list = ExtResource("7_3bwhi")
+audio_event_library = ExtResource("5_audio_lib")

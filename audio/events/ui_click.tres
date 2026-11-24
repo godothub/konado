@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="KonadoAudioEvent" format=3]
+
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_parameter.gd" id="1_oayna"]
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_event.gd" id="2_wh4je"]
+[ext_resource type="AudioStream" path="res://addons/konado/assets/audio/typewriter/typing_01.wav" id="3_r1q06"]
+[ext_resource type="AudioStream" path="res://addons/konado/assets/audio/typewriter/typing_02.wav" id="4_i0hd2"]
+[ext_resource type="AudioStream" path="res://addons/konado/assets/audio/typewriter/typing_03.wav" id="5_60sej"]
+[ext_resource type="AudioStream" path="res://addons/konado/assets/audio/typewriter/typing_04.wav" id="6_emaif"]
+
+[resource]
+script = ExtResource("2_wh4je")
+id = &"ui_click"
+streams = Array[AudioStream]([ExtResource("3_r1q06"), ExtResource("4_i0hd2"), ExtResource("5_60sej"), ExtResource("6_emaif")])
+container = "random"
+volume_db = -6.0
+pitch_random = 0.05
+cooldown = 0.03
+max_instances = 6

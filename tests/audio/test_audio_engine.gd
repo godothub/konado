@@ -5,6 +5,8 @@ extends SceneTree
 
 const BUS_MIXER := preload("res://addons/konado/runtime/audio/konado_audio_bus_mixer.gd")
 const CONTROLLER_SCRIPT := preload("res://addons/konado/runtime/audio/konado_audio_controller.gd")
+const DEMO_LIBRARY_PATH := "res://audio/audio_event_library.tres"
+const DEMO_SCRIPT_DIR := "res://sample/demo"
 
 var _failures := 0
 
@@ -24,6 +26,9 @@ func _run() -> void:
 	await _test_rtpc_gate_and_gain()
 	_test_legacy_lists()
 	_test_library_validation()
+	_test_demo_library()
+	_test_demo_scripts_reference_known_events()
+	_test_demo_scene_wiring()
 	await _test_state_roundtrip_keeps_settings()
 	await _test_controller_voice_priority()
 	if _failures == 0:
@@ -418,3 +423,85 @@ func _test_controller_voice_priority() -> void:
 	var events := controller.capture_state()
 	_expect(events.has("voice"), "captured state always carries the voice channel")
 	_free_node(controller)
+
+
+## 示例工程已完整迁移到事件：事件库、Bank 与脚本引用必须自洽。
+func _test_demo_library() -> void:
+	var library := load(DEMO_LIBRARY_PATH) as KonadoAudioEventLibrary
+	_expect(library != null, "the demo audio library loads")
+	if library == null:
+		return
+	library.rebuild()
+	for event_id: StringName in [&"echo", &"voice_01", &"voice_02", &"ui_click"]:
+		_expect(library.has_event(event_id), "demo event '%s' is registered" % event_id)
+	_expect(library.validate().is_empty(), "the demo library has no problems")
+	var echo := library.lookup(&"echo")
+	_expect(echo != null and echo.is_music() and echo.loop, "echo is a looping music event")
+	_expect(
+		echo != null and not echo.parameters.is_empty(),
+		"echo carries an RTPC binding for %love",
+	)
+	var click := library.lookup(&"ui_click")
+	_expect(
+		click != null and click.stream_count() == 4 and click.max_instances == 6,
+		"ui_click is a four-stream random container with an instance limit",
+	)
+	_expect(library.bank_names().has("demo_audio"), "the demo bank is indexed")
+
+
+## 扫描示例脚本：play/stop 与语音引用的事件必须存在于示例事件库。
+func _test_demo_scripts_reference_known_events() -> void:
+	var library := load(DEMO_LIBRARY_PATH) as KonadoAudioEventLibrary
+	if library == null:
+		_expect(false, "the demo audio library loads")
+		return
+	library.rebuild()
+	var directory := DirAccess.open(DEMO_SCRIPT_DIR)
+	if directory == null:
+		_expect(false, "the demo script directory is readable")
+		return
+	var play_pattern := RegEx.create_from_string("^play\\s+(?:bgm|sfx)\\s+(\\S+)")
+	var voice_pattern := RegEx.create_from_string("\\s(voice_[A-Za-z0-9_]+)\\s*(?:\\[|$)")
+	var missing: Array[String] = []
+	for file_name: String in directory.get_files():
+		if not file_name.ends_with(".ks"):
+			continue
+		var content := FileAccess.get_file_as_string("%s/%s" % [DEMO_SCRIPT_DIR, file_name])
+		for raw_line: String in content.split("\n"):
+			var line := raw_line.strip_edges()
+			if line.is_empty() or line.begins_with("#"):
+				continue
+			var play_match := play_pattern.search(line)
+			if play_match != null:
+				var event_id := StringName(play_match.get_string(1))
+				if not library.has_event(event_id):
+					missing.append("%s -> %s" % [file_name, event_id])
+			var voice_match := voice_pattern.search(line)
+			if voice_match != null:
+				var voice_id := StringName(voice_match.get_string(1))
+				if not library.has_event(voice_id):
+					missing.append("%s -> %s" % [file_name, voice_id])
+	_expect(missing.is_empty(), "demo scripts reference known audio events: %s" % [missing])
+
+
+## 示例场景必须真正接上事件库，否则剧本里的 play bgm 跑起来会失败。
+func _test_demo_scene_wiring() -> void:
+	var scene := load("res://sample/demo/demo.tscn") as PackedScene
+	_expect(scene != null, "the demo scene loads")
+	if scene == null:
+		return
+	var instance := scene.instantiate()
+	var manager := instance.get_node_or_null("KonadoDialogue") as KonadoDialogueManager
+	_expect(manager != null, "the demo scene exposes the dialogue manager")
+	if manager != null:
+		_expect(
+			manager.audio_event_library != null,
+			"the demo manager wires an audio event library",
+		)
+		if manager.audio_event_library != null:
+			manager.audio_event_library.rebuild()
+			_expect(
+				manager.audio_event_library.has_event(&"echo"),
+				"the demo library resolves the echo event",
+			)
+	instance.free()

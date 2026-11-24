@@ -77,6 +77,10 @@ res://audio/banks/               Bank（按章节/语言分组事件）
 3. 生成的事件会引用原来的音频流（不复制文件），ID 使用列表里的名字。
 4. 之后可以逐步删除旧列表；未迁移的条目仍会回退到旧列表播放。
 
+示例工程已经完成迁移，可直接对照：`res://audio/events/*.tres`、`res://audio/banks/demo_audio.tres`、
+`res://audio/audio_event_library.tres`，并在 `sample/demo/demo.tscn` 的 Manager 上接好
+`audio_event_library`。完整流程见 [音频工作流程](tutorial/core/audio-workflow.html)。
+
 ## 常见问题
 
 | 现象 | 原因 |

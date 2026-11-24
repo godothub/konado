@@ -1,5 +1,5 @@
 # 播放bgm语句，<bgm名称>为背景列表中的bgm_name
-play bgm echo
+play bgm echo [fade=2.0]
 
 screentext {
     "这是全屏文本"

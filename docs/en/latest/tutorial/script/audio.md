@@ -105,3 +105,5 @@ Music and ambience store "event id + playback position":
 | `silent` | Do not restore (stay silent) |
 
 One-shot `SFX` are never replayed on rollback, so stepping back does not fire them twice.
+
+See [Audio Workflow](tutorial/core/audio-workflow.html) for the full pipeline (assets, banks, release checks).

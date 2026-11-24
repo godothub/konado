@@ -97,3 +97,5 @@ Konado 会在运行时确保以下总线存在（父总线均为 `Master`）：
 | `silent` | 不恢复（保持静音） |
 
 一次性音效（`SFX`）不会在回退时重放，避免"回退一次响一次"。
+
+完整流程（资产管理、Bank 分组、出包检查）见 [音频工作流程](tutorial/core/audio-workflow.html)。

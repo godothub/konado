@@ -1,4 +1,4 @@
-play bgm echo
+play bgm echo [fade=2.0]
 screentext {
     "전체 화면 텍스트입니다"
     "전체 화면 텍스트입니다"
