@@ -104,6 +104,10 @@ const KONADO_SCRIPT_TOOLTIP_PLUGIN_SCRIPT := preload(
 const TYPEWRITER_AUDIO_INSPECTOR_SCRIPT := preload(
 	"res://addons/konado/editor/inspectors/audio_effect/typewriter_audio_inspector_plugin.gd"
 )
+const AUDIO_EVENT_INSPECTOR_SCRIPT := preload(
+	"res://addons/konado/editor/inspectors/audio_event/konado_audio_event_inspector_plugin.gd"
+)
+const AUDIO_DOCK_SCRIPT := preload("res://addons/konado/editor/audio/konado_audio_dock.gd")
 
 var _script_export_plugin: EditorExportPlugin
 var _script_resource_loader: ResourceFormatLoader
@@ -118,6 +122,8 @@ var _file_system_dock: FileSystemDock
 var _script_tooltip_plugin: EditorResourceTooltipPlugin
 
 var _typewriter_audio_inspector: EditorInspectorPlugin = null
+var _audio_event_inspector: EditorInspectorPlugin = null
+var _audio_dock: Control = null
 var _plugin_version := ""
 var _debugger_registered := false
 
@@ -146,6 +152,12 @@ func _enter_tree() -> void:
 	_typewriter_audio_inspector = TYPEWRITER_AUDIO_INSPECTOR_SCRIPT.new()
 	add_inspector_plugin(_typewriter_audio_inspector)
 
+	_audio_event_inspector = AUDIO_EVENT_INSPECTOR_SCRIPT.new()
+	add_inspector_plugin(_audio_event_inspector)
+
+	_audio_dock = AUDIO_DOCK_SCRIPT.new()
+	add_control_to_dock(DOCK_SLOT_RIGHT_UL, _audio_dock)
+
 
 func _exit_tree() -> void:
 	_cleanup_script_editor()
@@ -159,6 +171,15 @@ func _exit_tree() -> void:
 	if _typewriter_audio_inspector != null:
 		remove_inspector_plugin(_typewriter_audio_inspector)
 		_typewriter_audio_inspector = null
+
+	if _audio_event_inspector != null:
+		remove_inspector_plugin(_audio_event_inspector)
+		_audio_event_inspector = null
+
+	if _audio_dock != null:
+		remove_control_from_docks(_audio_dock)
+		_audio_dock.queue_free()
+		_audio_dock = null
 
 
 func _disable_plugin() -> void:

@@ -471,6 +471,13 @@ func _test_instruction_patch_scope() -> void:
 	if plain == null or voiced == null or bgm == null:
 		return
 	var manager := KonadoDialogueManager.new()
+	var audio_controller := KonadoAudioController.new()
+	manager.audio_controller = audio_controller
+	audio_controller.voice_player = AudioStreamPlayer.new()
+	audio_controller.background_music_player = AudioStreamPlayer.new()
+	audio_controller.sound_effect_player = AudioStreamPlayer.new()
+	manager.add_child(audio_controller)
+	audio_controller.configure()
 	var plain_patch := KonadoRuntimeState.capture_instruction_patch(
 		manager, plain.instruction_at(0)
 	)
@@ -481,18 +488,20 @@ func _test_instruction_patch_scope() -> void:
 	var voice_patch := KonadoRuntimeState.capture_instruction_patch(
 		manager, voiced.instruction_at(0)
 	)
+	var voice_audio: Dictionary = KonadoStateDelta.apply({}, voice_patch).get(
+		KonadoRuntimeState.DOMAIN_AUDIO, {}
+	)
 	_expect(
-		(
-			voice_patch.has(KonadoRuntimeState.DOMAIN_AUDIO)
-			and voice_patch[KonadoRuntimeState.DOMAIN_AUDIO].changes.has("voice")
-		),
-		"voiced dialogue captures only the voice channel",
+		voice_audio.has("voice"),
+		"voiced dialogue captures the audio domain including the voice channel",
 	)
 	var bgm_patch := KonadoRuntimeState.capture_instruction_patch(manager, bgm.instruction_at(0))
-	var bgm_changes: Dictionary = bgm_patch[KonadoRuntimeState.DOMAIN_AUDIO].changes
+	var bgm_audio: Dictionary = KonadoStateDelta.apply({}, bgm_patch).get(
+		KonadoRuntimeState.DOMAIN_AUDIO, {}
+	)
 	_expect(
-		bgm_changes.size() == 1 and bgm_changes.has("bgm"),
-		"BGM instructions do not copy voice or sound-effect state",
+		bgm_audio.has("bgm") and bgm_audio.has("mix") and bgm_audio.has("parameters"),
+		"audio instructions capture the whole audio domain (bgm + mix + parameters)",
 	)
 	manager.free()
 

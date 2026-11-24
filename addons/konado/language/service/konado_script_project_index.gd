@@ -479,6 +479,8 @@ func _parse_text_resource(path: String, source: String, extension: String) -> Di
 					path,
 				),
 			)
+	if extension == "tres":
+		_collect_audio_event_definitions(definitions, source, path, line_starts, external_resources)
 	if extension == "tscn":
 		_collect_pattern_definitions(
 			definitions, source, path, "states", ANIMATION_PATTERN, line_starts
@@ -487,6 +489,68 @@ func _parse_text_resource(path: String, source: String, extension: String) -> Di
 			definitions, source, path, "motions", MOTION_PATTERN, line_starts
 		)
 	return definitions
+
+
+## 音频事件（KonadoAudioEvent）按总线映射到 bgm / sfx / voices，
+## 使 `play bgm <id>` 的补全、跳转与重命名对事件同样生效。
+func _collect_audio_event_definitions(
+	definitions: Dictionary,
+	source: String,
+	path: String,
+	line_starts: PackedInt32Array,
+	external_resources: Dictionary,
+) -> void:
+	if not source.contains("KonadoAudioEvent"):
+		return
+	for block: Dictionary in _collect_blocks(source):
+		var block_source := String(block["source"])
+		var id_match := _find_string_name_property(block_source, "id")
+		if id_match.is_empty():
+			continue
+		var bus_match := _find_string_name_property(block_source, "bus")
+		var bus := String(bus_match["value"]) if not bus_match.is_empty() else "SFX"
+		_append_definition(
+			definitions,
+			_make_definition(
+				_audio_kind_for_bus(bus),
+				String(id_match["value"]),
+				path,
+				_line_at(line_starts, int(block["start"]) + int(id_match["start"])),
+				_resolve_first_ext_resource(block_source, "streams", external_resources),
+			),
+		)
+
+
+func _audio_kind_for_bus(bus: String) -> String:
+	if bus == "Music" or bus == "Ambience":
+		return "background_music_tracks"
+	if bus == "Voice":
+		return "voices"
+	return "sfx"
+
+
+## 事件里的 `id = &"echo"` 使用 StringName 写法，需要兼容前导 &。
+func _find_string_name_property(block_source: String, property_name: String) -> Dictionary:
+	var regex := _get_regex('(?m)^\\s*%s\\s*=\\s*&?"([^"]+)"' % property_name)
+	if regex == null:
+		return {}
+	var match_result := regex.search(block_source)
+	if match_result == null:
+		return {}
+	return {"value": match_result.get_string(1), "start": match_result.get_start(1)}
+
+
+## `streams = Array[AudioStream]([ExtResource("x")])` 取第一条外部音频流作为跳转目标。
+func _resolve_first_ext_resource(
+	block_source: String, property_name: String, external_resources: Dictionary
+) -> String:
+	var regex := _get_regex('(?m)^\\s*%s\\s*=\\s*[^\\n]*ExtResource\\("([^"]+)"\\)' % property_name)
+	if regex == null:
+		return ""
+	var match_result := regex.search(block_source)
+	if match_result == null:
+		return ""
+	return String(external_resources.get(match_result.get_string(1), ""))
 
 
 func _collect_external_resources(source: String) -> Dictionary:

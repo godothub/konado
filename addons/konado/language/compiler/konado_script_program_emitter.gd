@@ -334,10 +334,28 @@ func _actor_instruction(node: KonadoScriptSyntaxTree.ActorNode) -> Dictionary:
 
 func _audio_instruction(node: KonadoScriptSyntaxTree.AudioNode) -> Dictionary:
 	if node.action == "stop":
-		return _instruction(KonadoOpcode.Type.BGM_STOP)
+		return _instruction(KonadoOpcode.Type.BGM_STOP, [_audio_value(node, "fade", -1.0)])
 	if node.target == "bgm":
-		return _instruction(KonadoOpcode.Type.BGM_PLAY, [_intern(node.resource_name)])
-	return _instruction(KonadoOpcode.Type.SFX_PLAY, [_intern(node.resource_name)])
+		return _instruction(
+			KonadoOpcode.Type.BGM_PLAY,
+			[
+				_intern(node.resource_name),
+				_audio_value(node, "fade", -1.0),
+				_audio_value(node, "volume", 0.0),
+			]
+		)
+	return _instruction(
+		KonadoOpcode.Type.SFX_PLAY,
+		[
+			_intern(node.resource_name),
+			_audio_value(node, "volume", 0.0),
+			_audio_value(node, "count", 1.0),
+		]
+	)
+
+
+func _audio_value(node: KonadoScriptSyntaxTree.AudioNode, name: String, fallback: float) -> float:
+	return float(node.parameters.get(name, fallback))
 
 
 func _achievement_instruction(node: KonadoScriptSyntaxTree.AchievementNode) -> Dictionary:

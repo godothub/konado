@@ -70,6 +70,16 @@ Konado 的每一次失败都有**稳定错误码** `<模块前缀>-<三位序号
 | AU-009 | `audio.voice_failed` | 音频 | 错误 | 语音播放失败 | `KonadoDialogueManager._begin_dialogue_instruction`（addons/konado/runtime/dialogue/konado_dialogue_manager.gd） |
 | AU-010 | `audio.voice_not_found` | 音频 | 错误 | 语音列表里找不到该语音 | `KonadoDialogueServices._play_voice`（addons/konado/runtime/dialogue/konado_dialogue_services.gd） |
 | AU-011 | `audio.voice_stream_missing` | 音频 | 错误 | 语音资源未配置 | `KonadoDialogueServices._play_voice`（addons/konado/runtime/dialogue/konado_dialogue_services.gd） |
+| AU-012 | `audio.library_missing` | 音频 | 错误 | 音频事件库未配置 | `KonadoAudioEngine.play_event`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-013 | `audio.event_not_found` | 音频 | 错误 | 未找到音频事件 | `KonadoAudioEngine.play_event`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-014 | `audio.event_invalid` | 音频 | 错误 | 音频事件缺少 ID 或音频流 | `KonadoAudioEngine.play_event_object`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-015 | `audio.event_stream_missing` | 音频 | 错误 | 音频事件没有可播放的音频流 | `KonadoAudioEngine.play_event_object`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-016 | `audio.stream_missing` | 音频 | 错误 | 直接播放的音频流为空 | `KonadoAudioEngine.play_stream`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-017 | `audio.pool_exhausted` | 音频 | 错误 | 音效并发池已满 | `KonadoAudioEngine._start_sfx`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-018 | `audio.engine_missing` | 音频 | 错误 | 音频内核未初始化 | `KonadoAudioController.play_background_music_event`（addons/konado/runtime/audio/konado_audio_controller.gd） |
+| AU-019 | `audio.voice_lower_priority` | 音频 | 警告 | 语音优先级不足，已被忽略 | `KonadoAudioController.play_voice_event`（addons/konado/runtime/audio/konado_audio_controller.gd） |
+| AU-020 | `audio.gated` | 音频 | 警告 | 音频事件播放条件不成立 | `KonadoAudioController.play_voice_event`（addons/konado/runtime/audio/konado_audio_controller.gd） |
+| AU-021 | `audio.event_failed` | 音频 | 错误 | 音频事件播放失败 | `KonadoDialogueServices._play_audio_event`（addons/konado/runtime/dialogue/konado_dialogue_services.gd） |
 | CA-001 | `camera.move_rejected` | 相机 | 错误 | 相机移动被拒绝（机位缺失或时长非法） | `KonadoInstructionExecutor._camera_move_async`（addons/konado/runtime/dialogue/konado_instruction_executor.gd） |
 | CA-002 | `camera.reset_rejected` | 相机 | 错误 | 相机复位被拒绝 | `KonadoInstructionExecutor._camera_reset_async`（addons/konado/runtime/dialogue/konado_instruction_executor.gd） |
 | CA-003 | `camera.shake_rejected` | 相机 | 错误 | 相机震动被拒绝 | `KonadoInstructionExecutor._camera_shake_async`（addons/konado/runtime/dialogue/konado_instruction_executor.gd） |

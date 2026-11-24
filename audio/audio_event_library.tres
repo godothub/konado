@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="KonadoAudioEventLibrary" format=3]
+
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_bank.gd" id="1_85vr7"]
+[ext_resource type="Resource" path="res://audio/banks/demo_audio.tres" id="2_ywcx1"]
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_event.gd" id="3_87eii"]
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_event_library.gd" id="4_jp1ya"]
+
+[resource]
+script = ExtResource("4_jp1ya")
+banks = Array[ExtResource("1_85vr7")]([ExtResource("2_ywcx1")])

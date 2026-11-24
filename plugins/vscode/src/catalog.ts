@@ -122,6 +122,20 @@ export const COMMAND_NAMED_PARAMETERS: Readonly<
 	"asyncam shake": {
 		duration: { type: "number", defaultValue: "1.0", minimum: 0 },
 	},
+	"play bgm": {
+		fade: { type: "number", defaultValue: "1.0", minimum: 0 },
+		volume: { type: "number", defaultValue: "0" },
+	},
+	"play sfx": {
+		volume: { type: "number", defaultValue: "0" },
+		count: { type: "number", defaultValue: "1", minimum: 1 },
+	},
+	stop: {
+		fade: { type: "number", defaultValue: "1.0", minimum: 0 },
+	},
+	"stop bgm": {
+		fade: { type: "number", defaultValue: "1.0", minimum: 0 },
+	},
 };
 
 const PARAMETERIZED_COMMANDS = new Set([
@@ -238,19 +252,23 @@ export const COMMANDS: Readonly<Record<string, CommandInfo>> = {
 		descriptionZh: "播放背景音乐或音效。",
 	},
 	"play bgm": {
-		signature: "play bgm <bgm_name>",
-		description: "Play background music.",
-		descriptionZh: "播放背景音乐。",
+		signature: "play bgm <bgm_name> [fade] [volume]",
+		description:
+			"Play background music (event or legacy list entry) with an optional crossfade and dB offset.",
+		descriptionZh:
+			"播放背景音乐（事件或旧版列表），可指定淡入时长与 dB 偏移。",
 	},
 	"play sfx": {
-		signature: "play sfx <sound_effect_name>",
-		description: "Play a sound effect.",
-		descriptionZh: "播放音效。",
+		signature: "play sfx <sound_effect_name> [volume] [count]",
+		description:
+			"Play a sound effect with an optional dB offset and repeat count.",
+		descriptionZh: "播放音效，可指定 dB 偏移与重复次数。",
 	},
 	stop: {
-		signature: "stop bgm",
-		description: "Stop the active background music.",
-		descriptionZh: "停止当前背景音乐。",
+		signature: "stop bgm [fade]",
+		description:
+			"Stop the active background music with an optional fade out.",
+		descriptionZh: "停止当前背景音乐，可指定淡出时长。",
 	},
 	choice: {
 		signature: 'choice "<option>" -> <branch_name> [if <condition>] [once]',

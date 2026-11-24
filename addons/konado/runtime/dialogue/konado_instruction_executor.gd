@@ -301,7 +301,11 @@ func _audio_bgm_play(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	var resource_id := String(instruction.value(&"resource"))
-	var result: Dictionary = host._services()._play_bgm(resource_id)
+	var result: Dictionary = host._services()._play_bgm(
+		resource_id,
+		float(instruction.value(&"fade", -1.0)),
+		float(instruction.value(&"volume", 0.0))
+	)
 	return (
 		KonadoVirtualMachine.Result.COMPLETED
 		if bool(result.get("ok", false))
@@ -317,7 +321,7 @@ func _audio_bgm_play(
 
 
 func _audio_bgm_stop(
-	host: KonadoDialogueManager, _instruction: KonadoInstruction, _token: Dictionary
+	host: KonadoDialogueManager, instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	if host.audio_controller == null:
 		return _missing_controller("audio.bgm.stop", "audio_controller")
@@ -327,7 +331,7 @@ func _audio_bgm_stop(
 			"background_music_player 未配置",
 			_audio_context("audio.bgm.stop", "audio_player", "background_music_player"),
 		)
-	host.audio_controller.stop_background_music()
+	host.audio_controller.stop_background_music(float(instruction.value(&"fade", -1.0)))
 	return KonadoVirtualMachine.Result.COMPLETED
 
 
@@ -335,7 +339,9 @@ func _audio_sfx_play(
 	host: KonadoDialogueManager, instruction: KonadoInstruction, _token: Dictionary
 ) -> int:
 	var resource_id := String(instruction.value(&"resource"))
-	var result: Dictionary = host._services()._play_sound_effect(resource_id)
+	var result: Dictionary = host._services()._play_sound_effect(
+		resource_id, float(instruction.value(&"volume", 0.0)), int(instruction.value(&"count", 1))
+	)
 	return (
 		KonadoVirtualMachine.Result.COMPLETED
 		if bool(result.get("ok", false))

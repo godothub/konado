@@ -1,4 +1,4 @@
-play bgm echo
+play bgm echo [fade=2.0]
 screentext {
     "これは全画面テキストです"
     "これは全画面テキストです"

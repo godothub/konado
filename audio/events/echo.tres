@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="KonadoAudioEvent" format=3]
+
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_parameter.gd" id="1_x80a2"]
+[ext_resource type="Script" path="res://addons/konado/runtime/audio/konado_audio_event.gd" id="2_53my8"]
+[ext_resource type="AudioStream" path="res://sample/demo/background_music/echoes_of_home.mp3" id="3_6ay8l"]
+
+[sub_resource type="Resource" id="Resource_cqtum"]
+script = ExtResource("1_x80a2")
+variable = "%love"
+gain_floor = 0.85
+
+[resource]
+script = ExtResource("2_53my8")
+id = &"echo"
+bus = &"Music"
+streams = Array[AudioStream]([ExtResource("3_6ay8l")])
+loop = true
+fade_in = 0.8
+fade_out = 1.2
+parameters = Array[ExtResource("1_x80a2")]([SubResource("Resource_cqtum")])

@@ -99,6 +99,9 @@ jobs:
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_call_return.gd
           python3 .github/scripts/run_godot_test.py tests/dialogue/test_dialogue_rollback_stress.gd
 
+      - name: Test audio engine
+        run: python3 .github/scripts/run_godot_test.py tests/audio/test_audio_engine.gd
+
       - name: Guard KonadoScript performance complexity
         run: >-
           python3 .github/scripts/run_godot_test.py

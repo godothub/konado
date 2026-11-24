@@ -267,6 +267,25 @@ describe("KonadoScript diagnostics", () => {
 		expect(codes).toContain("syntax.choice_once");
 	});
 
+	it("validates audio event parameters", () => {
+		const valid = [
+			"play bgm theme [fade=1.5] [volume=-3]",
+			"play sfx hit [count=3] [volume=-2]",
+			"stop bgm [fade=2]",
+		].join("\n");
+		expect(analyzeDocument(valid)).toEqual([]);
+
+		const codes = analyzeDocument(
+			[
+				"play bgm theme [fade=-1]",
+				"play sfx hit [count=0]",
+				"play bgm theme [speed=2]",
+			].join("\n"),
+		).map((diagnostic) => diagnostic.code);
+		expect(codes).toContain("syntax.named_parameter_range");
+		expect(codes).toContain("syntax.named_parameter_unknown");
+	});
+
 	it("offers ranked fixes for misspelled commands", () => {
 		const diagnostics = analyzeDocument("endif_typo");
 

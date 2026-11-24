@@ -3,7 +3,7 @@ class_name KonadoScriptCommandRegistry
 
 ## Canonical KonadoScript command contract shared by compiler, IDE and VM.
 
-const SCHEMA_VERSION := 4
+const SCHEMA_VERSION := 5
 const STRING := "string"
 const STRING_ARRAY := "string_array"
 const CHOICES := "choices"
@@ -174,24 +174,24 @@ const COMMANDS := {
 	"audio.bgm.play":
 	{
 		"opcode": KonadoOpcode.Type.BGM_PLAY,
-		"operands": [["resource", STRING, true]],
-		"parameters": {},
+		"operands": [["resource", STRING, true], ["fade", VALUE, true], ["volume", VALUE, true]],
+		"parameters": {"fade": {"type": "number", "min": 0.0}, "volume": {"type": "number"}},
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
 	},
 	"audio.bgm.stop":
 	{
 		"opcode": KonadoOpcode.Type.BGM_STOP,
-		"operands": [],
-		"parameters": {},
+		"operands": [["fade", VALUE, true]],
+		"parameters": {"fade": {"type": "number", "min": 0.0}},
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
 	},
 	"audio.sfx.play":
 	{
 		"opcode": KonadoOpcode.Type.SFX_PLAY,
-		"operands": [["resource", STRING, true]],
-		"parameters": {},
+		"operands": [["resource", STRING, true], ["volume", VALUE, true], ["count", VALUE, true]],
+		"parameters": {"volume": {"type": "number"}, "count": {"type": "number", "min": 1.0}},
 		"blocking": false,
 		"rollback": ROLLBACK_REVERSIBLE
 	},
@@ -527,7 +527,12 @@ static func _cancellation_for(definition: Dictionary) -> String:
 
 
 static func _units_for(_definition: Dictionary) -> Dictionary:
-	return {"duration": "seconds", "interval": "seconds", "speed": "multiplier"}
+	return {
+		"duration": "seconds",
+		"interval": "seconds",
+		"speed": "multiplier",
+		"fade": "seconds",
+	}
 
 
 static func _defaults_for(definition: Dictionary) -> Dictionary:

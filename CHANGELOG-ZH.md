@@ -5,10 +5,13 @@
 - 新增 `call` / `return` 子程序语句：调用分支并在 `return` 后回到下一行，支持嵌套、回退与存档恢复
 - 新增条件选项（`choice "..." -> 分支 if %变量 >= 值`）与一次性选项（`choice "..." -> 分支 once`）
 - 当一组选项被 `if` / `once` 全部过滤时，直接继续执行选择组之后的语句，不再显示空菜单
+- 音频重构为事件 + 总线：音乐交叉淡入与真正循环、音效并发池（优先级/抢占）、语音自动 ducking、剧情变量驱动的 RTPC，以及 `Music`/`SFX`/`Voice`/`Ambience`/`UI` 分类总线
+- `play bgm` / `play sfx` / `stop bgm` 支持 `[fade=]`、`[volume=]`、`[count=]` 命名参数；玩家音量改写在总线上，读档不再覆盖设置
+- 新增 `Konado Audio` 面板与 `KonadoAudioEvent` 检查器：试听、参数模拟、问题检查，并可从旧版 BGM/音效/语音列表一键迁移
 
 ### 兼容性
 
-- Konado 2.9 **不读取 2.8 的存档与已导出的剧本数据**：`KonadoProgram.COMPILER_ABI` 为 `konado-2.9`，命令 Schema 为 4，运行期状态 Schema 为 3；旧存档会明确失败，不会以空状态继续运行
+- Konado 2.9 **不读取 2.8 的存档与已导出的剧本数据**：`KonadoProgram.COMPILER_ABI` 为 `konado-2.9`，命令 Schema 为 5，运行期状态 Schema 为 4；旧存档会明确失败，不会以空状态继续运行
 - `call_stack` 与 `choices` 是运行期状态的必需域，缺少任一域的状态会被校验拒绝
 - 升级时请重新打开项目让 `.ks` 重新编译，并重新导出游戏
 - `once` 的使用记录属于运行期状态，参与回退、检查点与存档；`init_dialogue()` 开始新游戏时会清空
