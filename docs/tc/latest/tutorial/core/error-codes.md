@@ -61,6 +61,16 @@ Konado 的每一次失敗都有**穩定錯誤碼** `<模組前綴>-<三位序號
 | AU-009 | `audio.voice_failed` | Audio | 錯誤 | Voice playback failed | `KonadoDialogueManager._begin_dialogue_instruction`（addons/konado/runtime/dialogue/konado_dialogue_manager.gd） |
 | AU-010 | `audio.voice_not_found` | Audio | 錯誤 | Voice is missing from the voice list | `KonadoDialogueServices._play_voice`（addons/konado/runtime/dialogue/konado_dialogue_services.gd） |
 | AU-011 | `audio.voice_stream_missing` | Audio | 錯誤 | Voice resource is not configured | `KonadoDialogueServices._play_voice`（addons/konado/runtime/dialogue/konado_dialogue_services.gd） |
+| AU-012 | `audio.library_missing` | Audio | 錯誤 | Audio event library is not configured | `KonadoAudioEngine.play_event`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-013 | `audio.event_not_found` | Audio | 錯誤 | Audio event not found | `KonadoAudioEngine.play_event`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-014 | `audio.event_invalid` | Audio | 錯誤 | Audio event has no id or stream | `KonadoAudioEngine.play_event_object`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-015 | `audio.event_stream_missing` | Audio | 錯誤 | Audio event has no playable stream | `KonadoAudioEngine.play_event_object`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-016 | `audio.stream_missing` | Audio | 錯誤 | Stream playback received an empty stream | `KonadoAudioEngine.play_stream`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-017 | `audio.pool_exhausted` | Audio | 錯誤 | Sound effect pool is exhausted | `KonadoAudioEngine._start_sfx`（addons/konado/runtime/audio/konado_audio_engine.gd） |
+| AU-018 | `audio.engine_missing` | Audio | 錯誤 | Audio engine is not initialized | `KonadoAudioController.play_background_music_event`（addons/konado/runtime/audio/konado_audio_controller.gd） |
+| AU-019 | `audio.voice_lower_priority` | Audio | 警告 | Voice request ignored because a higher priority line is playing | `KonadoAudioController.play_voice_event`（addons/konado/runtime/audio/konado_audio_controller.gd） |
+| AU-020 | `audio.gated` | Audio | 警告 | Audio event play condition is not satisfied | `KonadoAudioController.play_voice_event`（addons/konado/runtime/audio/konado_audio_controller.gd） |
+| AU-021 | `audio.event_failed` | Audio | 錯誤 | Audio event playback failed | `KonadoDialogueServices._play_audio_event`（addons/konado/runtime/dialogue/konado_dialogue_services.gd） |
 | CA-001 | `camera.move_rejected` | Camera | 錯誤 | Camera move rejected (missing marker or invalid duration) | `KonadoInstructionExecutor._camera_move_async`（addons/konado/runtime/dialogue/konado_instruction_executor.gd） |
 | CA-002 | `camera.reset_rejected` | Camera | 錯誤 | Camera reset rejected | `KonadoInstructionExecutor._camera_reset_async`（addons/konado/runtime/dialogue/konado_instruction_executor.gd） |
 | CA-003 | `camera.shake_rejected` | Camera | 錯誤 | Camera shake rejected | `KonadoInstructionExecutor._camera_shake_async`（addons/konado/runtime/dialogue/konado_instruction_executor.gd） |

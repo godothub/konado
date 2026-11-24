@@ -3,7 +3,7 @@ class_name KonadoRuntimeState
 
 ## Serializable VM state. Scene nodes and signal connections never enter a snapshot.
 
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := 4
 const MAX_SNAPSHOT_ACTORS := 256
 
 const DOMAIN_EXECUTION := &"execution"
@@ -117,10 +117,8 @@ static func capture_instruction_patch(
 			return _capture_dialogue_patch(manager, instruction)
 		KonadoOpcode.Type.BACKGROUND:
 			return _capture_stage_paths(manager, ["background"])
-		KonadoOpcode.Type.BGM_PLAY, KonadoOpcode.Type.BGM_STOP:
-			return _capture_audio_path(manager, "bgm")
-		KonadoOpcode.Type.SFX_PLAY:
-			return _capture_audio_path(manager, "sound_effect")
+		KonadoOpcode.Type.BGM_PLAY, KonadoOpcode.Type.BGM_STOP, KonadoOpcode.Type.SFX_PLAY:
+			return KonadoStateDelta.replacement_patch(capture_domains(manager, [DOMAIN_AUDIO]))
 	return KonadoStateDelta.replacement_patch(
 		capture_domains(manager, KonadoScriptCommandRegistry.state_domains(instruction.opcode()))
 	)
@@ -172,7 +170,7 @@ static func _capture_dialogue_patch(
 	]
 	patches.append_array(_stage_path_patches(manager, ["highlighted_actor"]))
 	if not String(instruction.value(&"voice_id")).is_empty():
-		patches.append(_capture_audio_path(manager, "voice"))
+		patches.append(KonadoStateDelta.replacement_patch(capture_domains(manager, [DOMAIN_AUDIO])))
 	return KonadoStateDelta.combine_patches(patches)
 
 
@@ -196,15 +194,6 @@ static func _stage_path_patches(
 			)
 		)
 	return patches
-
-
-static func _capture_audio_path(manager: KonadoDialogueManager, path: String) -> Dictionary:
-	var audio_state := (
-		manager.audio_controller.capture_state() if manager.audio_controller != null else {}
-	)
-	return KonadoStateDelta.path_patch(
-		[DOMAIN_AUDIO, path], audio_state.has(path), audio_state.get(path)
-	)
 
 
 static func validate(state: Dictionary, manager: KonadoDialogueManager) -> bool:
@@ -269,6 +258,7 @@ static func restore(state: Dictionary, manager: KonadoDialogueManager) -> bool:
 		valid = manager.screen_text.restore_state(state.get("screen_text", {})) and valid
 	if manager.dialogue_box != null:
 		valid = manager.dialogue_box.restore_state(state.get("dialogue_box", {})) and valid
+	manager._refresh_audio_parameters()
 	return valid
 
 

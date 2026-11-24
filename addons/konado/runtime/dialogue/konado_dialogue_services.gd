@@ -83,9 +83,18 @@ func _show_actor(
 	return {"ok": true}
 
 
-func _play_bgm(name: String) -> Dictionary:
+func _play_bgm(name: String, fade := -1.0, volume_db := 0.0) -> Dictionary:
 	if _host.audio_controller == null:
 		return _missing_audio_controller("audio.bgm.play")
+	var event_result := _play_audio_event(
+		name, "audio.bgm.play", "background_music", fade, volume_db
+	)
+	if not event_result.is_empty():
+		return event_result
+	return _play_bgm_stream(name, fade, volume_db)
+
+
+func _play_bgm_stream(name: String, fade: float, volume_db: float) -> Dictionary:
 	if _host.audio_controller.background_music_player == null:
 		return _failure(
 			&"audio.player_missing",
@@ -115,7 +124,7 @@ func _play_bgm(name: String) -> Dictionary:
 					"background_music",
 					name,
 				)
-			_host.audio_controller.play_background_music(item.stream, name)
+			_host.audio_controller.play_background_music(item.stream, name, fade, volume_db)
 			return {"ok": true}
 	return _failure(
 		&"audio.bgm_not_found",
@@ -127,7 +136,11 @@ func _play_bgm(name: String) -> Dictionary:
 	)
 
 
-func _play_voice(name: String) -> Dictionary:
+func _play_voice(name: String, priority := 0) -> Dictionary:
+	if _host.audio_controller != null:
+		var event_result := _play_audio_event(name, "audio.voice.play", "voice")
+		if not event_result.is_empty():
+			return event_result
 	if _host.audio_controller == null or _host.voice_list == null:
 		var failure := (
 			_missing_audio_controller("audio.voice.play")
@@ -167,7 +180,7 @@ func _play_voice(name: String) -> Dictionary:
 				)
 				missing_stream["duration"] = 0.0
 				return missing_stream
-			_host.audio_controller.play_voice(item.stream)
+			_host.audio_controller.play_voice(item.stream, priority)
 			return {
 				"ok": true,
 				"duration": item.stream.get_length(),
@@ -186,9 +199,18 @@ func _play_voice(name: String) -> Dictionary:
 	return missing_voice
 
 
-func _play_sound_effect(name: String) -> Dictionary:
+func _play_sound_effect(name: String, volume_db := 0.0, count := 1) -> Dictionary:
 	if _host.audio_controller == null:
 		return _missing_audio_controller("audio.sfx.play")
+	var event_result := _play_audio_event(
+		name, "audio.sfx.play", "sound_effect", -1.0, volume_db, count
+	)
+	if not event_result.is_empty():
+		return event_result
+	return _play_sound_effect_stream(name, volume_db, count)
+
+
+func _play_sound_effect_stream(name: String, volume_db: float, _count: int) -> Dictionary:
 	if _host.audio_controller.sound_effect_player == null:
 		return _failure(
 			&"audio.player_missing",
@@ -218,7 +240,7 @@ func _play_sound_effect(name: String) -> Dictionary:
 					"sound_effect",
 					name,
 				)
-			_host.audio_controller.play_sound_effect(item.stream)
+			_host.audio_controller.play_sound_effect(item.stream, volume_db)
 			return {"ok": true}
 	return _failure(
 		&"audio.sfx_not_found",
@@ -244,6 +266,7 @@ func _apply_temp_operation(name: String, operation: int, operand: Variant) -> Di
 			"$" + name,
 		)
 	_host._temp_variables[name] = result.get("value")
+	_host._refresh_audio_parameters()
 	return {"ok": true}
 
 
@@ -281,7 +304,58 @@ func _apply_variable_instruction(instruction: KonadoInstruction) -> Dictionary:
 			"%" + name,
 		)
 	_host.variable_store.set_value(name, result.get("value"))
+	_host._refresh_audio_parameters()
 	return {"ok": true}
+
+
+## 事件优先：命中事件库时返回事件播放结果；未命中返回空字典，由旧版资源列表兜底。
+func _play_audio_event(
+	name: String,
+	operation: String,
+	resource_kind: String,
+	fade := -1.0,
+	volume_db := 0.0,
+	count := 1
+) -> Dictionary:
+	if _host.audio_controller == null or _host.audio_controller.engine == null:
+		return {}
+	var event_id := StringName(name)
+	if not _host.audio_controller.engine.has_event(event_id):
+		return {}
+	var result: Dictionary
+	if resource_kind == "voice":
+		result = _host.audio_controller.play_voice_event(event_id)
+	elif resource_kind == "background_music":
+		result = _host.audio_controller.play_background_music_event(event_id, fade, volume_db)
+	else:
+		result = _host.audio_controller.play_sound_effect_event(
+			event_id, {"volume_db": volume_db, "count": count}
+		)
+	if bool(result.get("ok", false)):
+		return {"ok": true, "duration": float(result.get("duration", 0.0))}
+	if bool(result.get("ignored", false)):
+		return {"ok": true, "duration": 0.0}
+	return _failure(
+		&"audio.event_failed",
+		String(result.get("message", "音频事件播放失败")),
+		"audio",
+		operation,
+		resource_kind,
+		name,
+	)
+
+
+## 供音频 RTPC 使用的变量快照：{"%持久变量": 值, "$临时变量": 值}。
+func _audio_variable_values() -> Dictionary:
+	var values := {}
+	if _host.variable_store != null:
+		var stored: Variant = _host.variable_store.to_dict().get("variables", {})
+		if stored is Dictionary:
+			for key: Variant in (stored as Dictionary).keys():
+				values["%" + String(key)] = (stored as Dictionary)[key]
+	for key: Variant in _host._temp_variables.keys():
+		values["$" + String(key)] = _host._temp_variables[key]
+	return values
 
 
 func _missing_audio_controller(operation: String) -> Dictionary:
@@ -511,6 +585,10 @@ func _refresh_current_localized_dialogue() -> void:
 
 
 func _apply_setting(category: String, key: String, value: Variant) -> void:
+	if category == "audio":
+		if _host.audio_controller != null:
+			_host.audio_controller.refresh_volume()
+		return
 	if category == "text":
 		match key:
 			"text_speed":

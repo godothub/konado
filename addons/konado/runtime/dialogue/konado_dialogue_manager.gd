@@ -91,6 +91,8 @@ const MAX_IMMEDIATE_INSTRUCTIONS_PER_PUMP := 4096
 @export var background_music_list: KonadoBackgroundMusicList
 @export var voice_list: KonadoVoiceList
 @export var sound_effect_list: KonadoSoundEffectList
+## 音频事件库（事件 ID → 事件定义）；为空时继续使用上面的旧版列表
+@export var audio_event_library: KonadoAudioEventLibrary
 
 @export_category("Log Tool")
 @export var enable_overlay_log := true
@@ -175,6 +177,9 @@ func _ready() -> void:
 		dialogue_box.on_dialogue_click.connect(_process_next)
 		if audio_controller != null and audio_controller.voice_player != null:
 			dialogue_box.bind_voice_player(audio_controller.voice_player)
+	if audio_controller != null:
+		audio_controller.configure(audio_event_library)
+		audio_controller.set_variable_values(_services()._audio_variable_values())
 	if auto_play_button != null:
 		auto_play_button.toggled.connect(start_autoplay)
 	if quick_save_button != null:
@@ -284,6 +289,7 @@ func start_dialogue() -> void:
 	dialogue_state = DialogState.EXECUTING
 	if not _vm.has_state():
 		_vm.synchronize_state(KonadoRuntimeState.capture(self))
+	_refresh_audio_parameters()
 	shot_start.emit()
 	_schedule_pump()
 
@@ -752,6 +758,12 @@ func reload_localized_script(locale: String) -> bool:
 
 func _load_localized_shot(shot: KonadoShot) -> KonadoShot:
 	return _services()._load_localized_shot(shot)
+
+
+## 把当前脚本变量快照推给音频内核，驱动事件上的 RTPC 与播放条件。
+func _refresh_audio_parameters() -> void:
+	if audio_controller != null:
+		audio_controller.set_variable_values(_services()._audio_variable_values())
 
 
 func _play_voice_resource(name: String) -> Dictionary:

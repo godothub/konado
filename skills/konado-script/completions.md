@@ -10,9 +10,9 @@
 | `actor change` | 切换演员状态/表情 |
 | `actor move` | 移动演员到指定位置 |
 | `actor motion` | 播放演员动作 |
-| `play bgm` | 播放背景音乐 |
-| `play sfx` | 播放音效 |
-| `stop bgm` | 停止背景音乐 |
+| `play bgm` | 播放背景音乐（可带 `[fade=秒]`、`[volume=dB]`） |
+| `play sfx` | 播放音效（可带 `[volume=dB]`、`[count=次数]`） |
+| `stop bgm` | 停止背景音乐（可带 `[fade=秒]`） |
 | `screentext` | 显示全屏文本块 |
 | `showtextbox` | 显示对话框 |
 | `hidetextbox` | 隐藏对话框 |

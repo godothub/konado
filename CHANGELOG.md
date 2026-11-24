@@ -5,10 +5,13 @@
 - Added `call` / `return` subroutine statements: call a branch, return to the next line, support nesting, rollback, and save/load
 - Added conditional choices (`choice "..." -> branch if %variable >= value`) and one-time choices (`choice "..." -> branch once`)
 - A menu whose options are all filtered by `if` / `once` now continues with the statement after the choice group instead of showing an empty menu
+- Rebuilt audio around events and buses: music crossfades, real looping, an overlapping SFX pool with priorities/stealing, automatic voice ducking, RTPC bindings driven by story variables, and per-category `Music` / `SFX` / `Voice` / `Ambience` / `UI` buses
+- `play bgm` / `play sfx` / `stop bgm` accept `[fade=]`, `[volume=]` and `[count=]`; player volume now lives on buses so loading a save no longer overrides the settings
+- Added a `Konado Audio` dock and a `KonadoAudioEvent` inspector with preview, parameter simulation, problem reporting and one-click migration from the legacy BGM/SFX/voice lists
 
 ### Compatibility
 
-- Konado 2.9 does **not** read 2.8 saves or previously exported script data: `KonadoProgram.COMPILER_ABI` is `konado-2.9`, the command schema is 4, and the runtime state schema is 3. Old saves fail explicitly instead of loading with empty state.
+- Konado 2.9 does **not** read 2.8 saves or previously exported script data: `KonadoProgram.COMPILER_ABI` is `konado-2.9`, the command schema is 5, and the runtime state schema is 4. Old saves fail explicitly instead of loading with empty state.
 - `call_stack` and `choices` are required runtime-state domains; a state without them is rejected by validation.
 - Reopen the project so `.ks` files recompile, and re-export the game when upgrading from 2.8.
 - `once` usage is runtime state and participates in rollback, checkpoints, and saves; `init_dialogue()` clears it for a new game

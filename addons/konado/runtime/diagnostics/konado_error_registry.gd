@@ -801,6 +801,106 @@ const ERRORS := {
 		"title_zh": "引用了未声明的资源",
 		"title_en": "Referencing an undeclared resource",
 	},
+	"audio.library_missing":
+	{
+		"id": "AU-012",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_engine.gd",
+		"function": "KonadoAudioEngine.play_event",
+		"title_zh": "音频事件库未配置",
+		"title_en": "Audio event library is not configured",
+	},
+	"audio.event_not_found":
+	{
+		"id": "AU-013",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_engine.gd",
+		"function": "KonadoAudioEngine.play_event",
+		"title_zh": "未找到音频事件",
+		"title_en": "Audio event not found",
+	},
+	"audio.event_invalid":
+	{
+		"id": "AU-014",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_engine.gd",
+		"function": "KonadoAudioEngine.play_event_object",
+		"title_zh": "音频事件缺少 ID 或音频流",
+		"title_en": "Audio event has no id or stream",
+	},
+	"audio.event_stream_missing":
+	{
+		"id": "AU-015",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_engine.gd",
+		"function": "KonadoAudioEngine.play_event_object",
+		"title_zh": "音频事件没有可播放的音频流",
+		"title_en": "Audio event has no playable stream",
+	},
+	"audio.stream_missing":
+	{
+		"id": "AU-016",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_engine.gd",
+		"function": "KonadoAudioEngine.play_stream",
+		"title_zh": "直接播放的音频流为空",
+		"title_en": "Stream playback received an empty stream",
+	},
+	"audio.pool_exhausted":
+	{
+		"id": "AU-017",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_engine.gd",
+		"function": "KonadoAudioEngine._start_sfx",
+		"title_zh": "音效并发池已满",
+		"title_en": "Sound effect pool is exhausted",
+	},
+	"audio.engine_missing":
+	{
+		"id": "AU-018",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/audio/konado_audio_controller.gd",
+		"function": "KonadoAudioController.play_background_music_event",
+		"title_zh": "音频内核未初始化",
+		"title_en": "Audio engine is not initialized",
+	},
+	"audio.voice_lower_priority":
+	{
+		"id": "AU-019",
+		"module": "AU",
+		"severity": "warning",
+		"owner": "addons/konado/runtime/audio/konado_audio_controller.gd",
+		"function": "KonadoAudioController.play_voice_event",
+		"title_zh": "语音优先级不足，已被忽略",
+		"title_en": "Voice request ignored because a higher priority line is playing",
+	},
+	"audio.gated":
+	{
+		"id": "AU-020",
+		"module": "AU",
+		"severity": "warning",
+		"owner": "addons/konado/runtime/audio/konado_audio_controller.gd",
+		"function": "KonadoAudioController.play_voice_event",
+		"title_zh": "音频事件播放条件不成立",
+		"title_en": "Audio event play condition is not satisfied",
+	},
+	"audio.event_failed":
+	{
+		"id": "AU-021",
+		"module": "AU",
+		"severity": "error",
+		"owner": "addons/konado/runtime/dialogue/konado_dialogue_services.gd",
+		"function": "KonadoDialogueServices._play_audio_event",
+		"title_zh": "音频事件播放失败",
+		"title_en": "Audio event playback failed",
+	},
 }
 
 
