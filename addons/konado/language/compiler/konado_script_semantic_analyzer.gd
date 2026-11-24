@@ -6,6 +6,8 @@ class_name KonadoScriptSemanticAnalyzer
 
 const MAX_CONTROL_FLOW_STEPS := 500_000
 const MAX_DIAGNOSTICS := 256
+## call 链的静态上限；与 KonadoCallStack.MAX_DEPTH 保持一致。
+const MAX_CALL_CHAIN := 256
 
 var console_output_enabled := true
 var _errors: Array[String] = []
@@ -19,6 +21,8 @@ var _dependencies: Dictionary = {}
 var _path := ""
 var _analysis_steps := 0
 var _stable_ids: Dictionary = {}
+## 调用点：owner（"" 表示主线，否则为 branch id）→ Array[{target, line}]
+var _call_sites: Dictionary = {}
 
 
 func get_errors() -> Array[String]:
@@ -70,9 +74,11 @@ func analyze(script: KonadoScriptSyntaxTree.ScriptNode, path: String = "") -> bo
 	}
 	_analysis_steps = 0
 	_stable_ids.clear()
+	_call_sites.clear()
 	_path = path
 
 	_collect_metadata(script.statements, true)
+	_validate_call_graph()
 	_validate_all_statements(script.statements)
 	return _errors.is_empty()
 
@@ -105,6 +111,11 @@ func _validate_all_statements(root: Array) -> void:
 			):
 				_error(statement.line, "jump_branch 目标分支 '%s' 未找到" % statement.target_branch)
 			elif (
+				statement is KonadoScriptSyntaxTree.CallNode
+				and not _branch_nodes.has(statement.target_branch)
+			):
+				_error(statement.line, "call 目标分支 '%s' 未找到" % statement.target_branch)
+			elif (
 				statement is KonadoScriptSyntaxTree.SignalNode
 				and statement.signal_content.is_empty()
 			):
@@ -123,7 +134,9 @@ func _validate_all_statements(root: Array) -> void:
 				stack.append(statement.else_body)
 
 
-func _collect_metadata(statements: Array, top_level: bool = false) -> void:
+func _collect_metadata(
+	statements: Array, top_level: bool = false, owner_branch: String = ""
+) -> void:
 	for statement in statements:
 		if _errors.size() >= MAX_DIAGNOSTICS:
 			return
@@ -162,6 +175,10 @@ func _collect_metadata(statements: Array, top_level: bool = false) -> void:
 			_add_dependency("cameras", statement.target_cam)
 		elif statement is KonadoScriptSyntaxTree.JumpNode:
 			_add_dependency("scripts", statement.target_path)
+		elif statement is KonadoScriptSyntaxTree.CallNode:
+			var sites: Array = _call_sites.get(owner_branch, [])
+			sites.append({"target": statement.target_branch, "line": statement.line})
+			_call_sites[owner_branch] = sites
 		elif statement is KonadoScriptSyntaxTree.BranchNode:
 			if not top_level:
 				_error(statement.line, "branch 只能在脚本顶层声明")
@@ -173,10 +190,67 @@ func _collect_metadata(statements: Array, top_level: bool = false) -> void:
 			_branch_nodes[statement.branch_id] = statement
 			if statement.body.is_empty():
 				_error(statement.line, "branch 标签 '%s' 没有可执行内容" % statement.branch_id)
-			_collect_metadata(statement.body)
+			_collect_metadata(statement.body, false, statement.branch_id)
 		elif statement is KonadoScriptSyntaxTree.IfElseNode:
-			_collect_metadata(statement.if_body)
-			_collect_metadata(statement.else_body)
+			_collect_metadata(statement.if_body, false, owner_branch)
+			_collect_metadata(statement.else_body, false, owner_branch)
+
+
+## 静态调用图校验：拒绝递归调用（无法确定调用层数），并限制最大调用链。
+## 递归/超长调用链会让运行期调用栈、快照和存档失去上界，因此在编译期直接拦截。
+func _validate_call_graph() -> void:
+	var state := {}
+	var path: Array[String] = []
+	for start: String in _call_sites:
+		if int(state.get(start, 0)) != 0:
+			continue
+		_walk_call_graph(start, state, path)
+
+
+func _walk_call_graph(start: String, state: Dictionary, path: Array[String]) -> void:
+	var stack: Array[Dictionary] = [{"node": start, "index": 0}]
+	state[start] = 1
+	path.append(start)
+	while not stack.is_empty():
+		if _errors.size() >= MAX_DIAGNOSTICS:
+			return
+		var frame: Dictionary = stack[stack.size() - 1]
+		var node := String(frame["node"])
+		var sites: Array = _call_sites.get(node, [])
+		if int(frame["index"]) >= sites.size():
+			state[node] = 2
+			stack.pop_back()
+			if not path.is_empty():
+				path.pop_back()
+			continue
+		var site: Dictionary = sites[int(frame["index"])]
+		frame["index"] = int(frame["index"]) + 1
+		var target := String(site.get("target", ""))
+		if not _branch_nodes.has(target):
+			continue
+		var target_state := int(state.get(target, 0))
+		if target_state == 1:
+			var cycle_start := path.find(target)
+			var cycle := PackedStringArray()
+			for index in range(maxi(0, cycle_start), path.size()):
+				cycle.append(path[index])
+			cycle.append(target)
+			_error(
+				int(site.get("line", 1)),
+				"call 形成递归调用环：%s" % " → ".join(cycle),
+			)
+			continue
+		if target_state == 2:
+			continue
+		if stack.size() >= MAX_CALL_CHAIN:
+			_error(
+				int(site.get("line", 1)),
+				"call 调用链超过 %d 层安全上限" % MAX_CALL_CHAIN,
+			)
+			continue
+		state[target] = 1
+		path.append(target)
+		stack.append({"node": target, "index": 0})
 
 
 func _add_dependency(kind: String, value: String) -> void:

@@ -150,6 +150,8 @@ func _emit_statement(node: KonadoScriptSyntaxTree.ASTNode, logical_path: String)
 		)
 	elif node is KonadoScriptSyntaxTree.JumpBranchNode:
 		_pending_branch_targets.append({"pc": pc, "kind": "jump", "symbols": [node.target_branch]})
+	elif node is KonadoScriptSyntaxTree.CallNode:
+		_pending_branch_targets.append({"pc": pc, "kind": "call", "symbols": [node.target_branch]})
 	if (
 		int(instruction["opcode"])
 		not in [
@@ -157,9 +159,19 @@ func _emit_statement(node: KonadoScriptSyntaxTree.ASTNode, logical_path: String)
 			KonadoOpcode.Type.HALT,
 			KonadoOpcode.Type.JUMP_SCRIPT,
 			KonadoOpcode.Type.JUMP_BRANCH,
+			KonadoOpcode.Type.CALL_BRANCH,
+			KonadoOpcode.Type.RETURN,
 		]
 	):
 		fragment.exits.append({"pc": pc, "edge": "next"})
+	elif node is KonadoScriptSyntaxTree.CallNode:
+		# call 的 next_pcs 会被回填为目标分支入口；返回点（调用点之后的指令）
+		# 借 true_pcs 保存，避免为单条指令扩展 Program 的边数组。
+		fragment.exits.append({"pc": pc, "edge": "fallthrough"})
+	elif node is KonadoScriptSyntaxTree.ChoiceGroupNode:
+		# 所有选项都被 `if` / `once` 过滤掉时，执行流从这里继续；
+		# true_pcs 保存选择组之后的位置（没有后续语句时接到生成的 halt）。
+		fragment.exits.append({"pc": pc, "edge": "fallthrough"})
 	return fragment
 
 
@@ -226,11 +238,21 @@ func _instruction_for(node: KonadoScriptSyntaxTree.ASTNode) -> Dictionary:
 	elif node is KonadoScriptSyntaxTree.ChoiceGroupNode:
 		var encoded: Array = []
 		var targets := PackedStringArray()
+		var filters: Array = []
 		for option: KonadoScriptSyntaxTree.ChoiceOption in node.options:
 			encoded.append(_intern(option.text))
 			encoded.append(option.branch_target)
 			targets.append(option.branch_target)
-		result = _instruction(KonadoOpcode.Type.CHOICE, [encoded])
+			var condition := {}
+			if not option.condition.is_empty():
+				condition = {
+					"persistent": String(option.condition.get("prefix", "%")) == "%",
+					"name": String(option.condition.get("name", "")),
+					"operator": _condition_opcode(String(option.condition.get("op", "=="))),
+					"value": option.condition.get("value"),
+				}
+			filters.append({"condition": condition, "once": option.once})
+		result = _instruction(KonadoOpcode.Type.CHOICE, [encoded, filters])
 		result["branch_targets"] = targets
 	elif node is KonadoScriptSyntaxTree.VariableNode:
 		result = _instruction(
@@ -246,6 +268,10 @@ func _instruction_for(node: KonadoScriptSyntaxTree.ASTNode) -> Dictionary:
 		result = _instruction(KonadoOpcode.Type.JUMP_SCRIPT, [_intern(node.target_path)])
 	elif node is KonadoScriptSyntaxTree.JumpBranchNode:
 		result = _instruction(KonadoOpcode.Type.JUMP_BRANCH, [_intern(node.target_branch)])
+	elif node is KonadoScriptSyntaxTree.CallNode:
+		result = _instruction(KonadoOpcode.Type.CALL_BRANCH, [_intern(node.target_branch)])
+	elif node is KonadoScriptSyntaxTree.ReturnNode:
+		result = _instruction(KonadoOpcode.Type.RETURN)
 	elif node is KonadoScriptSyntaxTree.SignalNode:
 		result = _instruction(KonadoOpcode.Type.SIGNAL, [_intern(node.signal_content)])
 	elif node is KonadoScriptSyntaxTree.AchievementNode:
@@ -393,6 +419,8 @@ func _connect_exits(exits: Array[Dictionary], target_pc: int) -> void:
 				_program.true_pcs[pc] = target_pc
 			"false":
 				_program.false_pcs[pc] = target_pc
+			"fallthrough":
+				_program.true_pcs[pc] = target_pc
 
 
 func _connect_to_halt(exits: Array[Dictionary], line: int) -> void:
@@ -415,6 +443,13 @@ func _resolve_branch_targets() -> void:
 				_program.next_pcs[pc] = int(_branch_entries[symbol])
 			else:
 				_error(_program.source_lines[pc], "jump_branch 目标分支 '%s' 不存在或为空" % symbol)
+			continue
+		if pending["kind"] == "call":
+			var call_symbol := String(symbols[0])
+			if _branch_entries.has(call_symbol):
+				_program.next_pcs[pc] = int(_branch_entries[call_symbol])
+			else:
+				_error(_program.source_lines[pc], "call 目标分支 '%s' 不存在或为空" % call_symbol)
 			continue
 		var encoded: Array = _program.operand_at(pc, 0, [])
 		for index in range(symbols.size()):

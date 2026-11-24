@@ -1,6 +1,6 @@
 {
     "name": "konado-script-skill",
-    "version": "2.8.0",
+    "version": "2.9.0",
     "description": "视觉小说引擎 Konado DSL (.ks) 的编辑器增强技能包",
     "author": "Konado Contributors",
     "license": "MIT",

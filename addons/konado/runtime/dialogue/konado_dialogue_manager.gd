@@ -1,7 +1,7 @@
 extends Control
 class_name KonadoDialogueManager
 
-## Konado 2.8 atomic Program runtime
+## Konado 2.9 atomic Program runtime
 
 signal shot_start
 signal shot_end
@@ -17,6 +17,7 @@ enum DialogState { OFF, EXECUTING, WAITING, FAILED }
 const DIALOGUE_SERVICES := preload(
 	"res://addons/konado/runtime/dialogue/konado_dialogue_services.gd"
 )
+const CHOICE_TRACKER := preload("res://addons/konado/runtime/dialogue/konado_choice_tracker.gd")
 const INSTRUCTION_AWAITER := preload(
 	"res://addons/konado/runtime/dialogue/konado_instruction_awaiter.gd"
 )
@@ -126,6 +127,7 @@ var pending_runtime_failure: Dictionary:
 
 var _achievement_manager: Node
 var _temp_variables: Dictionary = {}
+var _choice_tracker: RefCounted
 var _waiting_signal_name := ""
 var _story_localization: Node
 var _dialogue_services: RefCounted
@@ -141,8 +143,6 @@ var _pumping := false
 var _pump_scheduled := false
 var _dialogue_typing := false
 var _rng := RandomNumberGenerator.new()
-var _translation_reload_queued := false
-var _loaded_locale := ""
 var _save_feedback_generation := 0
 var _transition_failure: Dictionary = {}
 var _runtime_failure_controller: KonadoRuntimeFailureController
@@ -154,7 +154,7 @@ func _notification(what: int) -> void:
 		return
 	if _runtime_failure_controller != null:
 		_runtime_failure_controller._refresh_overlay()
-	_queue_translation_reload()
+	_services()._queue_translation_reload()
 
 
 func _ready() -> void:
@@ -166,7 +166,7 @@ func _ready() -> void:
 	variable_store = variable_store if variable_store != null else KonadoVariableStore.new()
 	_achievement_manager = get_tree().root.get_node_or_null("KonadoAchievements")
 	_story_localization = get_tree().root.get_node_or_null("KonadoStoryLocalization")
-	_loaded_locale = TranslationServer.get_locale()
+	_services()._sync_locale()
 	if require_visible_in_tree:
 		if not is_visible_in_tree():
 			return
@@ -243,6 +243,7 @@ func init_dialogue(callback: Callable = Callable()) -> void:
 		return
 	_reset_transient_interfaces()
 	_history_coordinator().clear()
+	_choices().clear()
 	if stage_controller != null:
 		stage_controller.character_list = character_list
 		stage_controller.remove_all_actors(true)
@@ -426,22 +427,22 @@ func _resume_from_debugger() -> void:
 
 func _complete_instruction(
 	token: Dictionary, next_pc := INVALID_NEXT, schedule_next := true
-) -> void:
+) -> bool:
 	# A failed transaction intentionally retains its VM token for Retry. A cancelled
 	# async callback must never use that token to commit behind the recovery UI.
 	if dialogue_state == DialogState.FAILED or not _token_is_active(token):
-		return
+		return false
 	var instruction := _current_instruction()
 	if instruction == null:
-		return
+		return false
 	if next_pc == INVALID_NEXT:
 		next_pc = instruction.next_pc()
 	dialogue_line_end.emit(instruction.stable_key())
 	if not _token_is_active(token):
-		return
+		return false
 	if not _vm.commit_patch(token, next_pc, _capture_instruction_state(instruction)):
 		_fail_current("VM 提交失败", token, _instruction_failure_context(instruction))
-		return
+		return false
 	_history_coordinator().commit(token)
 	_active_token.clear()
 	_waiting_signal_name = ""
@@ -451,6 +452,7 @@ func _complete_instruction(
 		_finish_shot()
 	elif schedule_next:
 		_schedule_pump()
+	return true
 
 
 func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
@@ -479,14 +481,18 @@ func _transition_to_shot(token: Dictionary, target: KonadoShot) -> bool:
 		return false
 	var previous_shot := current_shot
 	var previous_temporary_variables := _temp_variables.duplicate(true)
+	var previous_call_stack := _vm.call_stack.export_frames()
 	_temp_variables.clear()
 	_waiting_signal_name = ""
+	# jump 切换镜头即离开当前调用上下文：未 return 的调用帧随之作废。
+	_vm.call_stack.clear()
 	current_shot = next_shot
 	_remember_shot(current_shot)
 	var state_after := KonadoRuntimeState.capture(self)
 	if not _vm.transition(token, next_shot.program, entry_pc, state_after):
 		current_shot = previous_shot
 		_temp_variables = previous_temporary_variables
+		_vm.call_stack.restore_frames(previous_call_stack)
 		_transition_failure = {
 			"code": "script.jump_vm_transition_failed",
 			"message": "VM 无法提交 jump 转场",
@@ -537,6 +543,7 @@ func _finish_shot() -> void:
 		return
 	_shot_active = false
 	dialogue_state = DialogState.OFF
+	_vm.call_stack.clear()
 	_cancel_pending_callbacks()
 	# 清理场景：隐藏对话框、清除文字、消除角色和背景
 	_reset_transient_interfaces(false)
@@ -722,9 +729,16 @@ func _on_option_triggered(choice: Dictionary, playback_generation := -1) -> void
 		return
 	if choice_controller != null:
 		choice_controller.distroy_options()
+	var instruction := _current_instruction()
+	# once 的使用记录必须先于提交写入，才能进入本次事务的 after 状态；
+	# 提交失败时恢复，避免 retry 把刚选的选项误判为“已用过”。
+	var used_before: Dictionary = _choices().export_state()
+	if instruction != null and instruction.opcode() == KonadoOpcode.Type.CHOICE:
+		_choices().mark_used(instruction, choice)
 	if dialogue_state != DialogState.FAILED:
-		_history_coordinator().stage_choice(_active_token, _current_instruction(), choice)
-	_complete_instruction(_active_token, target_pc)
+		_history_coordinator().stage_choice(_active_token, instruction, choice)
+	if not _complete_instruction(_active_token, target_pc):
+		_choices().restore_state(used_before)
 
 
 func emit_wait_signal(signal_name: String) -> void:
@@ -734,42 +748,6 @@ func emit_wait_signal(signal_name: String) -> void:
 
 func reload_localized_script(locale: String) -> bool:
 	return _services()._reload_localized_script(locale)
-
-
-func _queue_translation_reload() -> void:
-	if _translation_reload_queued:
-		return
-	_translation_reload_queued = true
-	_apply_translation_change.call_deferred()
-
-
-func _apply_translation_change() -> void:
-	_translation_reload_queued = false
-	if not is_inside_tree() or not is_node_ready():
-		return
-	var locale := TranslationServer.get_locale()
-	if locale == _loaded_locale:
-		return
-	if current_shot == null or reload_localized_script(locale):
-		_loaded_locale = locale
-
-
-func _refresh_current_localized_dialogue() -> void:
-	var instruction := _current_instruction()
-	if instruction == null:
-		return
-	if instruction.opcode() == KonadoOpcode.Type.DIALOGUE and dialogue_box != null:
-		var speaker_result: Dictionary = _services().resolve_speaker(
-			int(instruction.value(&"speaker_kind")), String(instruction.value(&"speaker"))
-		)
-		if not bool(speaker_result.get("ok", false)):
-			return
-		dialogue_box.character_name = String(speaker_result.get("value", ""))
-		dialogue_box.dialogue_text = _interpolate_variables(String(instruction.value(&"content")))
-	elif instruction.opcode() == KonadoOpcode.Type.CHOICE and choice_controller != null:
-		choice_controller.display_options(
-			instruction.value(&"options", []), self, 32, _playback_generation
-		)
 
 
 func _load_localized_shot(shot: KonadoShot) -> KonadoShot:
@@ -794,6 +772,13 @@ func _resolve_operand(value: Variant) -> Variant:
 
 func _compare_values(left: Variant, right: Variant, operator: int) -> Dictionary:
 	return KonadoValueOperations.compare(left, right, operator)
+
+
+## `choice` 运行期辅助：`once` 使用记录与可见条件求值（延迟创建）。
+func _choices() -> RefCounted:
+	if _choice_tracker == null:
+		_choice_tracker = CHOICE_TRACKER.new(self)
+	return _choice_tracker
 
 
 func _apply_variable_instruction(instruction: KonadoInstruction) -> Dictionary:

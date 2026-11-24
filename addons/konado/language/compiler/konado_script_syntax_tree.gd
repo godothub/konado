@@ -70,6 +70,10 @@ class ChoiceOption:
 	extends RefCounted
 	var text: String = ""
 	var branch_target: String = ""
+	## 可见条件；空字典表示始终可见。结构：{prefix, name, op, value}
+	var condition: Dictionary = {}
+	## 选中一次后不再出现在菜单里（Ren'Py 的 menu set 语义）
+	var once: bool = false
 
 
 ## 选项组节点（合并的连续 choice 行）
@@ -115,6 +119,17 @@ class JumpNode:
 class JumpBranchNode:
 	extends ASTNode
 	var target_branch: String = ""
+
+
+## 调用分支节点（call）：把返回点压入调用栈后进入目标分支
+class CallNode:
+	extends ASTNode
+	var target_branch: String = ""
+
+
+## 从调用返回节点（return）：弹出调用栈；空栈等价于结束当前镜头
+class ReturnNode:
+	extends ASTNode
 
 
 ## 自定义信号节点

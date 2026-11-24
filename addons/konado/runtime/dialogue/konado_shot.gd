@@ -8,7 +8,7 @@ static var _konado_script_language: KonadoScriptLanguage
 
 @export var shot_id: String = "新镜头"
 
-## Konado 2.8 唯一可执行产物。
+## Konado 2.9 唯一可执行产物。
 @export_storage var program: KonadoProgram
 @export_storage var locale_overlay: KonadoLocaleOverlay
 

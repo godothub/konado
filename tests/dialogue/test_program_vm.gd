@@ -19,7 +19,7 @@ func _init() -> void:
 	_test_source_normalization()
 	_test_diagnostic_budget()
 	if _failures == 0:
-		print("PASS: Konado 2.8 Program VM")
+		print("PASS: Konado 2.9 Program VM")
 	quit(_failures)
 
 

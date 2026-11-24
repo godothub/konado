@@ -1,7 +1,7 @@
 ---
 name: konado-script
 description: 视觉小说引擎 Konado DSL (.ks) 的编辑器增强技能包，提供语法高亮、代码补全、静态诊断和代码格式化参考配置。
-version: 2.8.0
+version: 2.9.0
 author: Konado Contributors
 tags: [visual-novel, dsl, konado]
 license: MIT

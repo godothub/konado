@@ -17,7 +17,7 @@
 | `showtextbox` | 显示对话框 |
 | `hidetextbox` | 隐藏对话框 |
 | `waitsignal` | 等待外部信号 |
-| `choice` | 创建选项（需配合 `branch`） |
+| `choice` | 创建选项（需配合 `branch`，可选 `if` 条件与 `once`） |
 | `branch` | 定义分支/标签块 |
 | `if` | 条件判断开始 |
 | `else` | 条件分支的否则块 |
@@ -26,6 +26,8 @@
 | `signal` | 发送自定义信号 |
 | `achievement` | 成就系统操作 |
 | `jump_branch` | 跳转到指定分支 |
+| `call` | 调用当前剧本内的分支，遇到 `return` 时回到下一行 |
+| `return` | 从被调用的分支返回；调用栈为空时结束当前镜头 |
 | `jump` | 跳转到另一个脚本文件 |
 | `cam` | 执行并等待镜头移动、复位或晃动 |
 | `asyncam` | 启动、停止非阻塞镜头操作 |
@@ -195,6 +197,30 @@ end
 **触发词**：`conv-speed`
 ```
 ${1:角色ID} "${2:对话文本}" [speed=${3:1.5}]
+```
+
+### 14. 调用子程序（`calls`）
+**触发词**：`calls`
+```
+call ${1:branch_name}
+```
+
+### 15. 子程序返回（`ret`）
+**触发词**：`ret`
+```
+return
+```
+
+### 16. 条件选项（`choice-if`）
+**触发词**：`choice-if`
+```
+choice "${1:选项文本}" -> ${2:branch_id} if %${3:变量名} == ${4:值}
+```
+
+### 17. 一次性选项（`choice-once`）
+**触发词**：`choice-once`
+```
+choice "${1:选项文本}" -> ${2:branch_id} once
 ```
 
 演员 ID 使用裸标识符；`$speaker` 和 `%speaker` 表示从变量读取演员 ID；只有纯文本署名才使用双引号，例如 `"旁白" "..."`。

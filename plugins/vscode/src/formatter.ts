@@ -75,7 +75,12 @@ function normalizeCode(
 		return "else:";
 	}
 	if (tokens[0]?.text === "choice" && tokens.length >= 4) {
-		return `${formatToken(tokens[0]!)} ${formatToken(tokens[1]!)} -> ${formatToken(tokens[3]!)}`;
+		const head = `${formatToken(tokens[0]!)} ${formatToken(tokens[1]!)} -> ${formatToken(tokens[3]!)}`;
+		const filters = tokens
+			.slice(4)
+			.map((token) => formatToken(token))
+			.join(" ");
+		return filters.length > 0 ? `${head} ${filters}` : head;
 	}
 	return tokens.map((token) => formatToken(token)).join(" ");
 }

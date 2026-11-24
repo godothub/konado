@@ -19,6 +19,8 @@ export const ROOT_KEYWORDS = [
 	"div",
 	"jump",
 	"jump_branch",
+	"call",
+	"return",
 	"signal",
 	"achievement",
 	"cam",
@@ -147,6 +149,7 @@ const PARAMETERIZED_COMMANDS = new Set([
 	"div",
 	"jump",
 	"jump_branch",
+	"call",
 	"signal",
 	"achievement unlock",
 	"achievement increment",
@@ -250,9 +253,11 @@ export const COMMANDS: Readonly<Record<string, CommandInfo>> = {
 		descriptionZh: "停止当前背景音乐。",
 	},
 	choice: {
-		signature: 'choice "<option>" -> <branch_name>',
-		description: "Add a choice that targets a branch.",
-		descriptionZh: "添加跳转到分支的选项。",
+		signature: 'choice "<option>" -> <branch_name> [if <condition>] [once]',
+		description:
+			"Add a choice that targets a branch, with an optional visible condition and one-time flag.",
+		descriptionZh:
+			"添加跳转到分支的选项，可附带可见条件（if）与一次性标记（once）。",
 	},
 	branch: {
 		signature: "branch <branch_name>",
@@ -308,6 +313,17 @@ export const COMMANDS: Readonly<Record<string, CommandInfo>> = {
 		signature: "jump_branch <branch_name>",
 		description: "Jump to a branch in the current script.",
 		descriptionZh: "跳转到当前剧本中的分支。",
+	},
+	call: {
+		signature: "call <branch_name>",
+		description:
+			"Run a branch as a subroutine and continue after it returns.",
+		descriptionZh: "调用当前剧本内的分支作为子程序，return 后回到调用点。",
+	},
+	return: {
+		signature: "return",
+		description: "Return from a called branch to the statement after call.",
+		descriptionZh: "从被调用的分支返回到 call 之后的语句。",
 	},
 	signal: {
 		signature: "signal <signal_name>",
@@ -422,6 +438,20 @@ export const SNIPPETS: readonly SnippetInfo[] = [
 		detail: "Add a dialogue choice",
 		detailZh: "添加对话选项",
 		body: 'choice "${1:Option}" -> ${2:branch_name}',
+	},
+	{
+		label: "Conditional choice",
+		labelZh: "条件选项",
+		detail: "Add a choice that only appears while a condition holds",
+		detailZh: "添加只在条件成立时出现的选项",
+		body: 'choice "${1:Option}" -> ${2:branch_name} if ${3:%love} == ${4:1}',
+	},
+	{
+		label: "Call subroutine",
+		labelZh: "调用子程序",
+		detail: "Call a branch and continue after it returns",
+		detailZh: "调用分支作为子程序，返回后继续执行",
+		body: "call ${1:branch_name}",
 	},
 	{
 		label: "Branch",

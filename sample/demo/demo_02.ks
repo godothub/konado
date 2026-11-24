@@ -23,6 +23,10 @@ choice "我要看看选项分支系统" -> goto_ks4
 
 choice "我要看看Konado内置效果" -> goto_effects
 
+choice "我要看看 call / return 子程序" -> goto_call_demo
+
+choice "我要看看条件/一次性选项" -> goto_choice_filters
+
 choice "不看了" -> exit_choice
 
 branch start_choice
@@ -67,5 +71,11 @@ branch goto_ks4
 
 branch goto_effects
 	jump res://sample/demo/built_in_effects_demo.ks
+
+branch goto_call_demo
+	jump res://sample/demo/demo_07_call_return.ks
+
+branch goto_choice_filters
+	jump res://sample/demo/demo_08_choice_filters.ks
 
 # 一定要随时点上面红色的保存按钮啊！Ctrl+S不保存脚本的！

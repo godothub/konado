@@ -42,4 +42,12 @@ describe("KonadoScript formatter", () => {
 			'screentext {\n\t"Opening"\n} [id=opening]',
 		);
 	});
+
+	it("keeps choice filters while normalizing spacing", () => {
+		const source = 'choice   "Gift"   ->  gift  if  %love  >=  5  once';
+
+		expect(formatSource(source, "\t")).toBe(
+			'choice "Gift" -> gift if %love >= 5 once',
+		);
+	});
 });

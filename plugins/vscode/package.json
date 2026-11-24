@@ -2,7 +2,7 @@
 	"name": "Konado",
 	"displayName": "Konado",
 	"description": "A complete KonadoScript IDE experience for Visual Studio Code.",
-	"version": "2.8.0",
+	"version": "2.9.0",
 	"packageManager": "pnpm@10.19.0",
 	"publisher": "GodotHub",
 	"author": {

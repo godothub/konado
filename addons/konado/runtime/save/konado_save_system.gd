@@ -1,7 +1,7 @@
 extends Node
 class_name KonadoSaveSystem
 
-## Atomic, versioned save system for the Konado 2.8 Program VM.
+## Atomic, versioned save system for the Konado 2.9 Program VM.
 
 signal save_completed(save_id: int, success: bool)
 signal load_completed(save_id: int, success: bool)
@@ -52,7 +52,7 @@ func load_game(save_id: int) -> bool:
 		return _load_failed(save_id, "存档不存在或内容损坏")
 	var data := KonadoSaveData.new()
 	if not data.from_dict(parsed):
-		return _load_failed(save_id, "存档格式与 Konado 2.8 不匹配")
+		return _load_failed(save_id, "存档格式与 Konado 2.9 不匹配（2.8 及更早的存档不再支持）")
 	if not dialogue_manager._restore_execution_snapshot(
 		{"execution": data.execution, "runtime_state": data.runtime_state}
 	):

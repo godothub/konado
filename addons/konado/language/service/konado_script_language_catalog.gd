@@ -28,6 +28,8 @@ const ROOT_KEYWORDS: PackedStringArray = [
 	"div",
 	"jump",
 	"jump_branch",
+	"call",
+	"return",
 	"signal",
 	"achievement",
 	"cam",
@@ -65,7 +67,7 @@ const SIGNATURES: Dictionary = {
 	"play bgm": "play bgm <background_music_name>",
 	"play sfx": "play sfx <sound_effect_name>",
 	"stop": "stop bgm",
-	"choice": 'choice "<option>" -> <branch_name>',
+	"choice": 'choice "<option>" -> <branch_name> [if <condition>] [once]',
 	"branch": "branch <branch_name>",
 	"if": "if <%variable|$variable> <operator> <value>:",
 	"else": "else:",
@@ -77,6 +79,8 @@ const SIGNATURES: Dictionary = {
 	"div": "div <%variable|$variable> <value>",
 	"jump": "jump <res://path/to/script.ks>",
 	"jump_branch": "jump_branch <branch_name>",
+	"call": "call <branch_name>",
+	"return": "return",
 	"signal": "signal <signal_name>",
 	"achievement": "achievement <unlock|increment|set_flag> ...",
 	"achievement unlock": 'achievement unlock "<achievement_id>"',
@@ -137,8 +141,9 @@ const COMMAND_DESCRIPTIONS: Dictionary = {
 	},
 	"choice":
 	{
-		"en": "Add a choice that targets a branch.",
-		"zh": "添加跳转到分支的选项。",
+		"en":
+		"Add a choice that targets a branch, optionally gated by a condition or shown only once.",
+		"zh": "添加跳转到分支的选项，可按条件显示或只显示一次。",
 	},
 	"branch":
 	{
@@ -174,6 +179,16 @@ const COMMAND_DESCRIPTIONS: Dictionary = {
 	{
 		"en": "Jump to a branch in the current script.",
 		"zh": "跳转到当前剧本中的分支。",
+	},
+	"call":
+	{
+		"en": "Call a branch and return to the next line when it reaches return.",
+		"zh": "调用一个分支，遇到 return 时回到下一行继续执行。",
+	},
+	"return":
+	{
+		"en": "Return from a called branch; ends the shot when the call stack is empty.",
+		"zh": "从被调用的分支返回；调用栈为空时结束当前镜头。",
 	},
 	"signal": {"en": "Emit a dialogue signal.", "zh": "发送剧情信号。"},
 	"achievement":
@@ -421,6 +436,22 @@ const SNIPPETS: Array[Dictionary] = [
 	},
 	{
 		"group": "branch",
+		"label": "Conditional choice",
+		"label_zh": "条件选项",
+		"snippet": 'choice "Option" -> branch_name if %variable_name == 0',
+		"description": "Add a choice that is only visible when a condition holds",
+		"description_zh": "添加仅在条件成立时显示的选项",
+	},
+	{
+		"group": "branch",
+		"label": "One-time choice",
+		"label_zh": "一次性选项",
+		"snippet": 'choice "Option" -> branch_name once',
+		"description": "Add a choice that disappears after it is picked",
+		"description_zh": "添加选中一次后不再出现的选项",
+	},
+	{
+		"group": "branch",
 		"label": "Branch",
 		"label_zh": "分支",
 		"snippet": 'branch branch_name\n    "Narrator" "Branch content."',
@@ -434,6 +465,22 @@ const SNIPPETS: Array[Dictionary] = [
 		"snippet": "jump_branch branch_name",
 		"description": "Jump to a branch in the current script",
 		"description_zh": "跳转到当前脚本中的分支",
+	},
+	{
+		"group": "branch",
+		"label": "Call branch",
+		"label_zh": "调用分支",
+		"snippet": "call branch_name",
+		"description": "Call a branch and return to the next line",
+		"description_zh": "调用分支，并在 return 后回到下一行",
+	},
+	{
+		"group": "branch",
+		"label": "Return",
+		"label_zh": "返回",
+		"snippet": "return",
+		"description": "Return from the called branch",
+		"description_zh": "从被调用的分支返回",
 	},
 	{
 		"group": "flow",

@@ -50,7 +50,7 @@ if (dialogue is not null && shot is not null)
 
 ### 存档与回滚
 
-`SaveGame`、`LoadGame`、`DeleteSave`、`GetSaveInfo` 和 `GetAllSaveInfo` 管理存档。`CanRollback`、`Rollback`、`GetExecutionHistory`、`ClearExecutionHistory`、`CreateCheckpoint` 和 `RestoreCheckpoint` 管理 2.8 指令虚拟机的历史与检查点。
+`SaveGame`、`LoadGame`、`DeleteSave`、`GetSaveInfo` 和 `GetAllSaveInfo` 管理存档。`CanRollback`、`Rollback`、`GetExecutionHistory`、`ClearExecutionHistory`、`CreateCheckpoint` 和 `RestoreCheckpoint` 管理 2.9 指令虚拟机的历史与检查点。
 
 ## StoryLocalizationApi
 

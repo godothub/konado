@@ -1,4 +1,4 @@
-extends "res://addons/konado/language/compiler/konado_script_parser_support.gd"
+extends "res://addons/konado/language/compiler/konado_script_parser_choices.gd"
 class_name KonadoScriptParser
 
 ## KonadoScript 语法分析器
@@ -136,6 +136,10 @@ func _parse_statement() -> KonadoScriptSyntaxTree.ASTNode:
 			statement = _parse_variable()
 		KonadoScriptToken.Type.KW_JUMP_BRANCH:
 			statement = _parse_jump_branch()
+		KonadoScriptToken.Type.KW_CALL:
+			statement = _parse_call()
+		KonadoScriptToken.Type.KW_RETURN:
+			statement = _parse_return()
 		KonadoScriptToken.Type.KW_JUMP:
 			statement = _parse_jump()
 		KonadoScriptToken.Type.KW_SIGNAL:
@@ -618,57 +622,6 @@ func _parse_camera_shake(node: Variant, command: String) -> bool:
 	return true
 
 
-## 选项组解析：合并连续的 choice 行
-func _parse_choice_group() -> KonadoScriptSyntaxTree.ChoiceGroupNode:
-	var node := KonadoScriptSyntaxTree.ChoiceGroupNode.new()
-	node.line = _peek().line
-
-	while not _at_end() and _check(KonadoScriptToken.Type.KW_CHOICE):
-		var option := _parse_single_choice_line(node, node.options.is_empty())
-		if option == null:
-			return null
-		node.options.append(option)
-		_skip_newlines()
-
-	return node
-
-
-## 解析单个 choice 行的内容
-func _parse_single_choice_line(
-	group: KonadoScriptSyntaxTree.ChoiceGroupNode, allow_parameters: bool
-) -> KonadoScriptSyntaxTree.ChoiceOption:
-	_advance()  # 跳过 choice
-
-	var option := KonadoScriptSyntaxTree.ChoiceOption.new()
-
-	# 读取选项文本
-	var text_tok := _expect(KonadoScriptToken.Type.STRING_LITERAL)
-	if text_tok == null:
-		_error("choice 缺少选项文本")
-		return null
-	option.text = text_tok.value
-
-	# 读取箭头 ->
-	if not _check(KonadoScriptToken.Type.OP_ARROW):
-		_error("choice 缺少 -> 运算符")
-		return null
-	_advance()
-
-	# 读取目标分支
-	var target_tok := _expect_any_value()
-	if target_tok == null:
-		_error("choice 缺少目标分支名")
-		return null
-	option.branch_target = str(target_tok.value)
-
-	if allow_parameters:
-		_parse_named_parameters(group)
-	elif _check(KonadoScriptToken.Type.LBRACKET):
-		_error("choice 组的命名参数只能写在第一项")
-	_finish_statement_line("choice 目标分支后存在多余内容")
-	return option
-
-
 ## 分支解析：branch <id> + 缩进块
 func _parse_branch() -> KonadoScriptSyntaxTree.BranchNode:
 	var node := KonadoScriptSyntaxTree.BranchNode.new()
@@ -876,6 +829,39 @@ func _parse_jump_branch() -> KonadoScriptSyntaxTree.JumpBranchNode:
 
 	_parse_named_parameters(node)
 	_finish_statement_line("jump_branch 目标分支后存在多余内容")
+	return node
+
+
+## call 解析：调用本剧本内的一个分支，执行到 return 时回到调用点。
+## 跨剧本调用暂不支持（用 jump），因此目标必须是有效标识符而不是 res:// 路径。
+func _parse_call() -> KonadoScriptSyntaxTree.CallNode:
+	var node := KonadoScriptSyntaxTree.CallNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 call
+
+	var target_tok := _expect_any_value()
+	if target_tok == null:
+		_error("call 缺少目标分支名")
+		return null
+	var target := str(target_tok.value)
+	if not target.is_valid_identifier():
+		_error("call 目标必须是本剧本内有效的分支标识符（跨剧本调用暂不支持，请使用 jump）")
+		return null
+	node.target_branch = target
+
+	_parse_named_parameters(node)
+	_finish_statement_line("call 目标分支后存在多余内容")
+	return node
+
+
+## return 解析：弹出调用栈并回到调用点；空栈时等价于 end。
+func _parse_return() -> KonadoScriptSyntaxTree.ReturnNode:
+	var node := KonadoScriptSyntaxTree.ReturnNode.new()
+	node.line = _peek().line
+	_advance()  # 跳过 return
+
+	_parse_named_parameters(node)
+	_finish_statement_line("return 后存在多余内容")
 	return node
 
 

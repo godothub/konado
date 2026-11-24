@@ -254,7 +254,7 @@ func _test_language_completion_and_outline() -> void:
 			and _completion_displays(result).has("[interval=]")
 			and _completion_displays(result).has("[id=]")
 		),
-		"dialogue completion exposes the registered KonadoScript 2.8 parameters",
+		"dialogue completion exposes the registered KonadoScript 2.9 parameters",
 	)
 	result = (
 		language
@@ -649,7 +649,7 @@ func _test_highlighter_lexical_boundaries() -> void:
 			_color_at(parameter_highlighting, parameter_line.find("speed"), Color.WHITE)
 			== KonadoScriptSyntaxHighlighter.SUBCOMMAND_COLOR
 		),
-		"KonadoScript 2.8 named parameters receive semantic highlighting",
+		"KonadoScript 2.9 named parameters receive semantic highlighting",
 	)
 	var unterminated_line := '"unfinished # still string'
 	var unterminated_highlighting := highlighter._highlight_line_text(

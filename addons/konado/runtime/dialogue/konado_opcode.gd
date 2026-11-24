@@ -1,7 +1,7 @@
 extends RefCounted
 class_name KonadoOpcode
 
-## Stable Konado 2.8 bytecode operation identifiers.
+## Stable Konado 2.9 bytecode operation identifiers.
 ##
 ## These values are part of the Program ABI. Append new operations; never
 ## reorder existing ones inside the same format version.
@@ -38,6 +38,8 @@ enum Type {
 	CAMERA_RESET_ASYNC,
 	CAMERA_SHAKE_ASYNC,
 	CAMERA_STOP_ASYNC,
+	CALL_BRANCH,
+	RETURN,
 }
 
 const NAMES := [
@@ -73,6 +75,8 @@ const NAMES := [
 	"camera.reset.async",
 	"camera.shake.async",
 	"camera.stop.async",
+	"call.branch",
+	"return",
 ]
 
 
@@ -85,4 +89,15 @@ static func is_terminal(opcode: int) -> bool:
 
 
 static func is_control_flow(opcode: int) -> bool:
-	return opcode in [Type.CHOICE, Type.CONDITION, Type.JUMP_SCRIPT, Type.JUMP_BRANCH, Type.HALT]
+	return (
+		opcode
+		in [
+			Type.CHOICE,
+			Type.CONDITION,
+			Type.JUMP_SCRIPT,
+			Type.JUMP_BRANCH,
+			Type.CALL_BRANCH,
+			Type.RETURN,
+			Type.HALT,
+		]
+	)

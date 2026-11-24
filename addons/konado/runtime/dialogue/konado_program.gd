@@ -8,7 +8,7 @@ class_name KonadoProgram
 ## keys are kept only for saves, localization, diagnostics and hot reload.
 
 const FORMAT_VERSION := 1
-const COMPILER_ABI := "konado-2.8"
+const COMPILER_ABI := "konado-2.9"
 const INVALID_PC := -1
 
 @export_storage var format_version := FORMAT_VERSION
@@ -119,9 +119,49 @@ func _valid_operand(value: Variant, field_type: String, keys: Dictionary) -> boo
 			valid = _valid_string_array(value)
 		KonadoScriptCommandRegistry.CHOICES:
 			valid = _valid_choices(value, keys)
+		KonadoScriptCommandRegistry.FILTERS:
+			valid = _valid_filters(value)
 		KonadoScriptCommandRegistry.VALUE:
 			valid = _valid_value(value)
 	return valid
+
+
+## 选项过滤表：与选项一一对应，每项携带 `once` 与可选的可见条件。
+## filters 属于结构字段，本地化剧本必须与默认剧本完全一致。
+func _valid_filters(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	for entry: Variant in value as Array:
+		if not _valid_filter_entry(entry):
+			return false
+	return true
+
+
+func _valid_filter_entry(entry: Variant) -> bool:
+	if not entry is Dictionary:
+		return false
+	var filter: Dictionary = entry
+	if not filter.get("once", false) is bool:
+		return false
+	var condition: Variant = filter.get("condition", {})
+	if not condition is Dictionary:
+		return false
+	var condition_dict: Dictionary = condition
+	if condition_dict.is_empty():
+		return true
+	return _valid_filter_condition(condition_dict)
+
+
+func _valid_filter_condition(condition: Dictionary) -> bool:
+	var name: Variant = condition.get("name", null)
+	if not name is String or String(name).is_empty():
+		return false
+	if not condition.get("persistent", null) is bool:
+		return false
+	var operator: Variant = condition.get("operator", null)
+	if not operator is int or int(operator) < 0 or int(operator) > 5:
+		return false
+	return _valid_value(condition.get("value"))
 
 
 func _valid_value(value: Variant) -> bool:

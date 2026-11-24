@@ -5,6 +5,8 @@ extends RefCounted
 var _host: KonadoDialogueManager
 var _variable_pattern := RegEx.create_from_string("([%$])([\\p{L}_][\\p{L}\\p{N}_-]*)")
 var _missing_variable_warnings: Dictionary = {}
+var _translation_reload_queued := false
+var _loaded_locale := ""
 
 
 func _init(host: KonadoDialogueManager) -> void:
@@ -444,7 +446,7 @@ func _reload_localized_script(locale: String) -> bool:
 		return false
 	_host.current_shot.install_locale_overlay(localized.locale_overlay)
 	_host.start_dialogue_shot = localized
-	_host._refresh_current_localized_dialogue()
+	_refresh_current_localized_dialogue()
 	return true
 
 
@@ -464,6 +466,48 @@ func _load_localized_shot(shot: KonadoShot) -> KonadoShot:
 		service.call("load_localized_script", shot.source_path, "", false) as KonadoShot
 	)
 	return localized if localized != null else shot
+
+
+func _sync_locale() -> void:
+	_loaded_locale = TranslationServer.get_locale()
+
+
+func _queue_translation_reload() -> void:
+	if _translation_reload_queued:
+		return
+	_translation_reload_queued = true
+	_apply_translation_change.call_deferred()
+
+
+func _apply_translation_change() -> void:
+	_translation_reload_queued = false
+	if not _host.is_inside_tree() or not _host.is_node_ready():
+		return
+	var locale := TranslationServer.get_locale()
+	if locale == _loaded_locale:
+		return
+	if _host.current_shot == null or _reload_localized_script(locale):
+		_loaded_locale = locale
+
+
+func _refresh_current_localized_dialogue() -> void:
+	var instruction := _host._current_instruction()
+	if instruction == null:
+		return
+	if instruction.opcode() == KonadoOpcode.Type.DIALOGUE and _host.dialogue_box != null:
+		var speaker_result: Dictionary = resolve_speaker(
+			int(instruction.value(&"speaker_kind")), String(instruction.value(&"speaker"))
+		)
+		if not bool(speaker_result.get("ok", false)):
+			return
+		_host.dialogue_box.character_name = String(speaker_result.get("value", ""))
+		_host.dialogue_box.dialogue_text = _interpolate_variables(
+			String(instruction.value(&"content"))
+		)
+	elif instruction.opcode() == KonadoOpcode.Type.CHOICE and _host.choice_controller != null:
+		_host.choice_controller.display_options(
+			instruction.value(&"options", []), _host, 32, _host._playback_generation
+		)
 
 
 func _apply_setting(category: String, key: String, value: Variant) -> void:

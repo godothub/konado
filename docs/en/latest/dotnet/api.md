@@ -50,7 +50,7 @@ Resource properties are `CharacterList`, `BackgroundList`, `BgmList`, `VoiceList
 
 ### Saves and rollback
 
-Use `SaveGame`, `LoadGame`, `DeleteSave`, `GetSaveInfo`, and `GetAllSaveInfo` for saves. Use `CanRollback`, `Rollback`, `GetExecutionHistory`, `ClearExecutionHistory`, `CreateCheckpoint`, and `RestoreCheckpoint` for the 2.8 instruction VM history and checkpoints.
+Use `SaveGame`, `LoadGame`, `DeleteSave`, `GetSaveInfo`, and `GetAllSaveInfo` for saves. Use `CanRollback`, `Rollback`, `GetExecutionHistory`, `ClearExecutionHistory`, `CreateCheckpoint`, and `RestoreCheckpoint` for the 2.9 instruction VM history and checkpoints.
 
 ## StoryLocalizationApi
 

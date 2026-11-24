@@ -20,6 +20,8 @@ var history_limit := DEFAULT_HISTORY_LIMIT
 var checkpoint_limit := DEFAULT_CHECKPOINT_LIMIT
 var history_bytes_limit := DEFAULT_HISTORY_BYTES_LIMIT
 var checkpoint_bytes_limit := DEFAULT_CHECKPOINT_BYTES_LIMIT
+## call/return 调用栈；属于运行期状态，随 delta 历史、行快照与存档一起恢复。
+var call_stack := KonadoCallStack.new()
 
 var _active_token: Dictionary = {}
 var _rewind_skip_keys: Dictionary = {}
@@ -47,6 +49,7 @@ func install(new_program: KonadoProgram, start_pc := KonadoProgram.INVALID_PC) -
 	pc = KonadoProgram.INVALID_PC
 	_current_state.clear()
 	clear_history()
+	call_stack.clear()
 	program = new_program
 	pc = target_pc
 	return true
@@ -184,6 +187,7 @@ func _commit_skipped(token: Dictionary, next_pc: int) -> bool:
 func cancel() -> void:
 	generation += 1
 	_active_token.clear()
+	call_stack.clear()
 
 
 func can_rollback(steps := 1, allow_cancelling_active := false, allow_barriers := false) -> bool:
@@ -369,6 +373,15 @@ func has_state() -> bool:
 
 func synchronize_state(state: Dictionary) -> void:
 	_current_state = state.duplicate(true)
+	var execution: Variant = _current_state.get("execution", {})
+	if execution is Dictionary:
+		var frames: Variant = (execution as Dictionary).get("call_stack", [])
+		if not call_stack.restore_frames(frames, _call_instruction_limit()):
+			call_stack.clear()
+
+
+func _call_instruction_limit() -> int:
+	return program.instruction_count() if program != null else -1
 
 
 func restore_boundary(new_program: KonadoProgram, start_pc: int, state: Dictionary) -> bool:
