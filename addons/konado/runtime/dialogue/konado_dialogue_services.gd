@@ -128,7 +128,7 @@ func _play_bgm_stream(name: String, fade: float, volume_db: float) -> Dictionary
 			return {"ok": true}
 	return _failure(
 		&"audio.bgm_not_found",
-		"未找到 BGM '%s'" % name,
+		"未找到背景音乐 '%s'：事件库与 background_music_list 中都没有该 ID" % name,
 		"audio",
 		"audio.bgm.play",
 		"background_music",
@@ -189,7 +189,7 @@ func _play_voice(name: String, priority := 0) -> Dictionary:
 		_host.dialogue_box.clear_voice_progress()
 	var missing_voice := _failure(
 		&"audio.voice_not_found",
-		"未找到语音 '%s'" % name,
+		"未找到语音 '%s'：事件库与 voice_list 中都没有该 ID" % name,
 		"audio",
 		"audio.voice.play",
 		"voice",
@@ -244,7 +244,7 @@ func _play_sound_effect_stream(name: String, volume_db: float, _count: int) -> D
 			return {"ok": true}
 	return _failure(
 		&"audio.sfx_not_found",
-		"未找到音效 '%s'" % name,
+		"未找到音效 '%s'：事件库与 sound_effect_list 中都没有该 ID" % name,
 		"audio",
 		"audio.sfx.play",
 		"sound_effect",

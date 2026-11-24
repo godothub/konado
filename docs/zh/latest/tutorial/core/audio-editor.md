@@ -61,14 +61,19 @@ res://audio/banks/               Bank（按章节/语言分组事件）
 
 | 区域 | 功能 |
 | --- | --- |
-| 事件树 | 按总线分组列出 `res://audio` 下的事件，显示流数量/并发/循环/参数 |
+| 事件树 | 按 Bank 分组列出 `res://audio` 下的事件（未加入 Bank 的进“未分组”），显示总线/流数量/并发/循环/参数 |
 | 搜索 | 按 ID 过滤 |
 | ▶ 试听 / ■ 停止 | 试听当前选中事件 |
 | 参数模拟 | 拖动滑条模拟变量值，并显示当前增益与条件是否成立 |
 | 问题 | 重复 ID、缺少音频流、未保存的流、参数变量非法 |
+| ＋ 事件 | 在 `res://audio/events` 创建空事件并在检查器中打开 |
+| 事件库 | 在检查器中打开 `res://audio/audio_event_library.tres`，方便把 Bank 拖进去 |
 | 导入旧版列表 | 在文件系统里选中 `background_music_list` / `sound_effect_list` / `voice_list`，一键生成 `res://audio/events/<id>.tres` |
 
 双击事件会在检查器中打开它。面板监听文件系统变化，保存资源后会自动刷新。
+
+> 忘记在 Manager 上接 `audio_event_library` 时，控制器会自动加载约定路径
+> `res://audio/audio_event_library.tres`，因此只要事件库放在约定位置就不会静音。
 
 ## 从旧版列表迁移
 

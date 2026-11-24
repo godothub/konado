@@ -22,6 +22,8 @@ const BUS_MIXER := preload("res://addons/konado/runtime/audio/konado_audio_bus_m
 const DEFAULT_DUCK_DB := -6.0
 const DEFAULT_DUCK_ATTACK := 0.08
 const DEFAULT_DUCK_RELEASE := 0.25
+## 未显式配置事件库时自动加载的约定路径
+const DEFAULT_LIBRARY_PATH := "res://audio/audio_event_library.tres"
 
 
 class VoicePlaybackWaiter:
@@ -101,9 +103,24 @@ func configure(library: KonadoAudioEventLibrary = null) -> void:
 			}
 		)
 	)
-	engine.set_library(library if library != null else audio_event_library)
+	engine.set_library(_resolve_library(library))
 	_ensure_voice_connection()
 	refresh_volume()
+
+
+## 事件库解析顺序：调用方显式传入 > 控制器导出 > 约定路径。
+## 这样即使场景忘了接 audio_event_library，只要事件库在约定位置也能工作。
+func _resolve_library(explicit: KonadoAudioEventLibrary) -> KonadoAudioEventLibrary:
+	if explicit != null:
+		return explicit
+	if audio_event_library != null:
+		return audio_event_library
+	if not ResourceLoader.exists(DEFAULT_LIBRARY_PATH):
+		return null
+	var fallback := load(DEFAULT_LIBRARY_PATH) as KonadoAudioEventLibrary
+	if fallback != null:
+		audio_event_library = fallback
+	return fallback
 
 
 ## 从设置刷新分类音量。音量写在总线上，读档不会覆盖玩家设置。

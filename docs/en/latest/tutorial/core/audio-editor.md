@@ -64,15 +64,21 @@ The dock on the right side of the editor provides:
 
 | Area | Function |
 | --- | --- |
-| Event tree | Events under `res://audio`, grouped by bus with stream/instance/loop/parameter info |
+| Event tree | Events under `res://audio`, grouped by bank (unbanked events go to an "ungrouped" group) with bus/stream/instance/loop/parameter info |
 | Search | Filter by event id |
 | ▶ Preview / ■ Stop | Audition the selected event |
 | Parameter slider | Simulate a variable value and see the resulting gain / gate state |
 | Problems | Duplicate ids, missing streams, unsaved streams, invalid parameter variables |
+| + Event | Create an empty event under `res://audio/events` and open it in the inspector |
+| Library | Open `res://audio/audio_event_library.tres` in the inspector so banks can be dragged in |
 | Import legacy lists | Select `background_music_list` / `sound_effect_list` / `voice_list` in the FileSystem and generate `res://audio/events/<id>.tres` |
 
 Double-clicking an event opens it in the inspector. The dock listens to filesystem changes and
 refreshes after you save a resource.
+
+> If `audio_event_library` is not assigned on the manager, the controller still loads the
+> convention path `res://audio/audio_event_library.tres`, so a library in the standard location
+> never goes silent.
 
 ## Migrating legacy lists
 

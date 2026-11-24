@@ -317,6 +317,10 @@ export class ProjectIndex implements ProjectSnapshot, vscode.Disposable {
 			}
 		}
 
+		if (uri.path.endsWith(".tres")) {
+			this.indexAudioEvents(uri, uriText, source, externalResources);
+		}
+
 		if (uri.path.endsWith(".tscn")) {
 			this.collectPatternDefinitions(
 				uri,
@@ -330,6 +334,55 @@ export class ProjectIndex implements ProjectSnapshot, vscode.Disposable {
 				"motions",
 				/^\s*resource_name\s*=\s*"([^"]+)"/gmu,
 			);
+		}
+	}
+
+	/**
+	 * Index KonadoAudioEvent resources by bus so `play bgm <id>` resolves to the
+	 * event (and its first stream) instead of only legacy resource lists.
+	 */
+	private indexAudioEvents(
+		uri: vscode.Uri,
+		uriText: string,
+		source: string,
+		externalResources: ReadonlyMap<string, string>,
+	): void {
+		if (!source.includes("KonadoAudioEvent")) {
+			return;
+		}
+		for (const block of collectBlocks(source)) {
+			const id = findStringNameProperty(block.source, "id");
+			if (!id) {
+				continue;
+			}
+			const bus =
+				findStringNameProperty(block.source, "bus")?.value ?? "SFX";
+			const kind: SymbolKind =
+				bus === "Music" || bus === "Ambience"
+					? "bgms"
+					: bus === "Voice"
+						? "voices"
+						: "sfx";
+			const targetResourcePath = resolveFirstExtResource(
+				block.source,
+				"streams",
+				externalResources,
+			);
+			this.add({
+				kind,
+				name: id.value,
+				uri: uriText,
+				line: lineAt(source, block.start + id.start),
+				start: id.column,
+				end: id.column + id.value.length,
+				targetUri: targetResourcePath
+					? this.resolveResourceUri(
+							uri,
+							targetResourcePath,
+						)?.toString()
+					: undefined,
+				targetResourcePath,
+			});
 		}
 	}
 
@@ -498,6 +551,36 @@ function findScriptDefault(
 		return undefined;
 	}
 	return { value, start: 0, column: 0 };
+}
+
+/** `id = &"echo"` uses StringName syntax, so accept an optional leading `&`. */
+function findStringNameProperty(
+	source: string,
+	property: string,
+): { value: string; start: number; column: number } | undefined {
+	const pattern = new RegExp(`^\\s*${property}\\s*=\\s*&?"([^"]+)"`, "mu");
+	const match = pattern.exec(source);
+	const value = match?.[1];
+	if (!match || !value) {
+		return undefined;
+	}
+	const start = match.index + match[0].lastIndexOf(value);
+	const lineStart = source.lastIndexOf("\n", start - 1) + 1;
+	return { value, start, column: start - lineStart };
+}
+
+/** First external audio stream of an array property such as `streams`. */
+function resolveFirstExtResource(
+	source: string,
+	property: string,
+	resources: ReadonlyMap<string, string>,
+): string | undefined {
+	const pattern = new RegExp(
+		`^\\s*${property}\\s*=\\s*[^\\n]*ExtResource\\("([^"]+)"\\)`,
+		"mu",
+	);
+	const id = pattern.exec(source)?.[1];
+	return id ? resources.get(id) : undefined;
 }
 
 function resolvePropertyTarget(

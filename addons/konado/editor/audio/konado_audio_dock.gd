@@ -6,10 +6,16 @@ extends VBoxContainer
 
 const EVENT_SCRIPT := preload("res://addons/konado/runtime/audio/konado_audio_event.gd")
 const LIBRARY_SCRIPT := preload("res://addons/konado/runtime/audio/konado_audio_event_library.gd")
+const BANK_SCRIPT := preload("res://addons/konado/runtime/audio/konado_audio_bank.gd")
 const SEARCH_DIRS: Array[String] = ["res://audio", "res://events"]
 const EVENT_OUTPUT_DIR := "res://audio/events"
+const BANK_OUTPUT_DIR := "res://audio/banks"
+const LIBRARY_PATH := "res://audio/audio_event_library.tres"
+const UNGROUPED := "(未分组)"
 
 var _events: Array[KonadoAudioEvent] = []
+var _banks: Array[KonadoAudioBank] = []
+var _bank_by_event: Dictionary = {}
 var _library: KonadoAudioEventLibrary
 var _tree: Tree
 var _problems: ItemList
@@ -41,6 +47,8 @@ func _build_ui() -> void:
 	refresh_button.text = "刷新"
 	refresh_button.pressed.connect(_refresh)
 	header.add_child(refresh_button)
+	header.add_child(_make_button("＋ 事件", _create_event))
+	header.add_child(_make_button("事件库", _open_library))
 	_search = LineEdit.new()
 	_search.placeholder_text = "搜索事件 ID"
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -115,14 +123,22 @@ func _refresh_if_dirty() -> void:
 
 func _refresh() -> void:
 	_events = _scan_events()
+	_banks = _scan_banks()
+	_bank_by_event.clear()
 	_library.banks.clear()
 	_library.events.clear()
+	for bank: KonadoAudioBank in _banks:
+		_library.banks.append(bank)
+		for event: KonadoAudioEvent in bank.events:
+			if event != null:
+				_bank_by_event[event.id] = String(bank.bank_name)
 	for event: KonadoAudioEvent in _events:
-		_library.events.append(event)
+		if not _bank_by_event.has(event.id):
+			_library.events.append(event)
 	_library.rebuild()
 	_fill_tree()
 	_fill_problems()
-	_status.text = "已加载 %d 个事件" % _events.size()
+	_status.text = "已加载 %d 个事件 / %d 个 Bank" % [_events.size(), _banks.size()]
 
 
 func _scan_events() -> Array[KonadoAudioEvent]:
@@ -161,6 +177,38 @@ func _collect_event(path: String, found: Array[KonadoAudioEvent], seen: Dictiona
 		found.append(resource as KonadoAudioEvent)
 
 
+func _scan_banks() -> Array[KonadoAudioBank]:
+	var found: Array[KonadoAudioBank] = []
+	var seen: Dictionary = {}
+	for directory: String in SEARCH_DIRS:
+		_scan_bank_directory(directory, found, seen)
+	return found
+
+
+func _scan_bank_directory(
+	directory: String, found: Array[KonadoAudioBank], seen: Dictionary
+) -> void:
+	var handle := DirAccess.open(directory)
+	if handle == null:
+		return
+	handle.list_dir_begin()
+	var entry := handle.get_next()
+	while entry != "":
+		if entry.begins_with("."):
+			entry = handle.get_next()
+			continue
+		var path := directory.path_join(entry)
+		if handle.current_is_dir():
+			_scan_bank_directory(path, found, seen)
+		elif entry.get_extension().to_lower() == "tres" and not seen.has(path):
+			seen[path] = true
+			var resource := ResourceLoader.load(path)
+			if resource is KonadoAudioBank:
+				found.append(resource as KonadoAudioBank)
+		entry = handle.get_next()
+	handle.list_dir_end()
+
+
 func _fill_tree() -> void:
 	_tree.clear()
 	var root := _tree.create_item()
@@ -169,13 +217,13 @@ func _fill_tree() -> void:
 	for event: KonadoAudioEvent in _events:
 		if not filter.is_empty() and not String(event.id).to_lower().contains(filter):
 			continue
-		var bus := String(event.bus)
-		if not groups.has(bus):
+		var group_name := String(_bank_by_event.get(event.id, UNGROUPED))
+		if not groups.has(group_name):
 			var group := _tree.create_item(root)
-			group.set_text(0, bus)
+			group.set_text(0, group_name)
 			group.set_selectable(0, false)
-			groups[bus] = group
-		var item := _tree.create_item(groups[bus])
+			groups[group_name] = group
+		var item := _tree.create_item(groups[group_name])
 		item.set_text(0, String(event.id))
 		item.set_text(1, _summary(event))
 		item.set_metadata(0, event)
@@ -183,6 +231,7 @@ func _fill_tree() -> void:
 
 func _summary(event: KonadoAudioEvent) -> String:
 	var parts := PackedStringArray()
+	parts.append(String(event.bus))
 	parts.append("%d 流" % event.streams.size())
 	parts.append("并发 %d" % event.max_instances)
 	if event.loop:
@@ -323,6 +372,35 @@ func _on_problem_activated(index: int) -> void:
 			_tree.scroll_to_item(item)
 			_on_tree_selected()
 			return
+
+
+## 在 res://audio/events 里创建一个空事件并直接在检查器中打开。
+func _create_event() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(EVENT_OUTPUT_DIR))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BANK_OUTPUT_DIR))
+	var index := 1
+	var path := "%s/new_event_%d.tres" % [EVENT_OUTPUT_DIR, index]
+	while FileAccess.file_exists(path):
+		index += 1
+		path = "%s/new_event_%d.tres" % [EVENT_OUTPUT_DIR, index]
+	var event := EVENT_SCRIPT.new()
+	event.id = StringName("new_event_%d" % index)
+	event.bus = KonadoAudioEvent.BUS_SFX
+	if ResourceSaver.save(event, path) != OK:
+		_status.text = "创建事件失败：%s" % path
+		return
+	EditorInterface.get_resource_filesystem().scan()
+	_refresh()
+	EditorInterface.inspect_object(load(path))
+	_status.text = "已创建 %s，拖入音频流并填写 ID 即可" % path
+
+
+## 在检查器里打开约定路径的事件库，方便把 Bank 拖进去。
+func _open_library() -> void:
+	if not ResourceLoader.exists(LIBRARY_PATH):
+		_status.text = "未找到 %s，请先创建 KonadoAudioEventLibrary" % LIBRARY_PATH
+		return
+	EditorInterface.inspect_object(load(LIBRARY_PATH))
 
 
 ## 把文件系统里选中的旧版 BGM/SFX/Voice 列表转成 res://audio/events/*.tres。

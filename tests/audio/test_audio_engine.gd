@@ -7,6 +7,7 @@ const BUS_MIXER := preload("res://addons/konado/runtime/audio/konado_audio_bus_m
 const CONTROLLER_SCRIPT := preload("res://addons/konado/runtime/audio/konado_audio_controller.gd")
 const DEMO_LIBRARY_PATH := "res://audio/audio_event_library.tres"
 const DEMO_SCRIPT_DIR := "res://sample/demo"
+const DEMO_SCENE := preload("res://sample/demo/demo.tscn")
 
 var _failures := 0
 
@@ -29,6 +30,8 @@ func _run() -> void:
 	_test_demo_library()
 	_test_demo_scripts_reference_known_events()
 	_test_demo_scene_wiring()
+	await _test_demo_playback()
+	await _test_default_library_discovery()
 	await _test_state_roundtrip_keeps_settings()
 	await _test_controller_voice_priority()
 	if _failures == 0:
@@ -486,11 +489,8 @@ func _test_demo_scripts_reference_known_events() -> void:
 
 ## 示例场景必须真正接上事件库，否则剧本里的 play bgm 跑起来会失败。
 func _test_demo_scene_wiring() -> void:
-	var scene := load("res://sample/demo/demo.tscn") as PackedScene
-	_expect(scene != null, "the demo scene loads")
-	if scene == null:
-		return
-	var instance := scene.instantiate()
+	_expect(DEMO_SCENE != null, "the demo scene loads")
+	var instance := DEMO_SCENE.instantiate()
 	var manager := instance.get_node_or_null("KonadoDialogue") as KonadoDialogueManager
 	_expect(manager != null, "the demo scene exposes the dialogue manager")
 	if manager != null:
@@ -505,3 +505,70 @@ func _test_demo_scene_wiring() -> void:
 				"the demo library resolves the echo event",
 			)
 	instance.free()
+
+
+## 端到端：用示例场景真实的 Manager / 事件库跑一遍 BGM、语音、音效与缺失诊断。
+func _test_demo_playback() -> void:
+	await process_frame
+	_expect(DEMO_SCENE != null, "the demo scene loads for playback")
+	var instance := DEMO_SCENE.instantiate()
+	root.add_child(instance)
+	await process_frame
+	var manager := instance.get_node_or_null("KonadoDialogue") as KonadoDialogueManager
+	_expect(manager != null, "the demo manager is available at runtime")
+	if manager == null or manager.audio_controller == null:
+		instance.queue_free()
+		return
+	var engine := manager.audio_controller.engine
+	_expect(engine != null, "the demo audio engine is configured at runtime")
+	if engine == null:
+		instance.queue_free()
+		return
+	manager.audio_controller.cancel_pending_operations()
+	var bgm: Dictionary = manager._services()._play_bgm("echo")
+	_expect(bool(bgm.get("ok", false)), "the demo BGM event plays through the services")
+	_expect_equal(
+		engine.active_music().get("event_id", &""),
+		&"echo",
+		"echo becomes the active music after the play command",
+	)
+	var voice: Dictionary = manager._services()._play_voice("voice_01")
+	_expect(bool(voice.get("ok", false)), "the demo voice event plays through the services")
+	_expect_approx(
+		float(voice.get("duration", 0.0)), 2.8, 0.3, "the voice event reports its duration"
+	)
+	var sfx: Dictionary = manager._services()._play_sound_effect("ui_click", -4.0, 3)
+	_expect(bool(sfx.get("ok", false)), "the demo sound effect plays with a repeat count")
+	_expect_equal(engine.active_instances().size(), 3, "three sfx instances are tracked")
+	var missing: Dictionary = manager._services()._play_bgm("definitely_missing")
+	_expect_equal(
+		missing.get("code"),
+		&"audio.list_missing",
+		"a missing id reports which source to configure",
+	)
+	_expect(
+		String(missing.get("message", "")).contains("background_music_list"),
+		"the missing-id message names the legacy list to configure",
+	)
+	manager.stop_dialogue()
+	instance.queue_free()
+	await process_frame
+
+
+## 未接线时也应能从约定路径发现事件库（避免“忘记接线就静音”）。
+func _test_default_library_discovery() -> void:
+	await process_frame
+	var controller := CONTROLLER_SCRIPT.new()
+	controller.background_music_player = AudioStreamPlayer.new()
+	controller.voice_player = AudioStreamPlayer.new()
+	controller.sound_effect_player = AudioStreamPlayer.new()
+	for player: AudioStreamPlayer in [
+		controller.background_music_player, controller.voice_player, controller.sound_effect_player
+	]:
+		controller.add_child(player)
+	root.add_child(controller)
+	_expect(
+		controller.engine != null and controller.engine.has_event(&"echo"),
+		"the convention library is discovered when none is assigned",
+	)
+	_free_node(controller)
